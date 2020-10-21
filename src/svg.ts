@@ -1,5 +1,6 @@
 import { ProcessedDiagram, ProcessedTick } from "./diagram";
 const LIFELINE_BASE_X = 400;
+const BORDER_WIDTH = 2;
 
 export function render(d: ProcessedDiagram): string {
   const width = (d.ticks.length - 1) * 50 + LIFELINE_BASE_X + 30;
@@ -7,8 +8,9 @@ export function render(d: ProcessedDiagram): string {
   const labelBoxWidth = 300;
   const svg = [];
 
-  svg.push(`<text x="10" y="30" class="title">${d.title}</text>`);
+  svg.push(`<text x="10" y="28" class="title">${d.title}</text>`);
 
+  const heights: { [key: string]: number } = {};
   let currHeight = 70;
   [...d.lifelines].forEach((l) => {
     const [boxSvg, height] = genLifelineBox(
@@ -20,8 +22,30 @@ export function render(d: ProcessedDiagram): string {
       d.ticks
     );
     currHeight += height + 30;
+    heights[l] = currHeight - 45;
     svg.push(boxSvg);
   });
+
+  d.arrows.forEach((a) => {
+    const originPoints = getStateLineCoords(
+      d.ticks,
+      a.originLifeline,
+      heights[a.originLifeline]
+    );
+    const destPoints = getStateLineCoords(
+      d.ticks,
+      a.destLifeline,
+      heights[a.destLifeline]
+    );
+    svg.push(
+      arrow(
+        originPoints[a.originTick][a.originIdx],
+        destPoints[a.destTick][a.destIdx]
+      )
+    );
+  });
+
+  svg.push(drawLegends(d.ticks.length, currHeight - 20));
   svg.push("</svg>");
 
   const height = currHeight;
@@ -31,10 +55,21 @@ export function render(d: ProcessedDiagram): string {
   .title { font: bold 20px sans-serif }
   .state-label { font-family: sans-serif }
   .lifeline-label { font: bold 17px sans-serif }
+  .legend { font-family: sans-serif }
 </style>
-<polyline points="${width - 3},0 ${width - 3},${height - 3} 0,${
-    height - 3
-  }" stroke="black" fill="none" style="stroke-width:3px" />
+<defs>
+  <!-- arrowhead marker definition -->
+  <marker id="arrow" viewBox="0 0 15 15" refX="7.5" refY="7.5"
+      markerWidth="9" markerHeight="9"
+      orient="auto-start-reverse">
+    <path d="M 0 0 L 15 7.5 L 0 15 z" />
+  </marker>
+</defs>
+<polyline points="${width - BORDER_WIDTH},0 ${width - BORDER_WIDTH},${
+    height - BORDER_WIDTH
+  } 0,${
+    height - BORDER_WIDTH
+  }" stroke="black" fill="none" style="stroke-width:${BORDER_WIDTH}px" />
 <polyline points="0,${labelBoxHeight} ${
     labelBoxWidth - 20
   },${labelBoxHeight} ${labelBoxWidth},${
@@ -79,7 +114,7 @@ function genLifelineBox(
     ret.push(
       `<line x1="${i * 50 + LIFELINE_BASE_X}" y1="${yCoord + height - 5}" x2="${
         i * 50 + LIFELINE_BASE_X
-      }" y2="${yCoord + height + 15}" stroke="black" />`
+      }" y2="${yCoord + height + 10}" stroke="black" />`
     );
   }
 
@@ -102,24 +137,62 @@ function genLifelineBox(
   });
 
   ret.push(
-    `<polyline points="${LIFELINE_BASE_X},${yCoord + height - 10}${ticks.reduce(
-      (acc, curr, i, arr) => {
-        acc += ` ${LIFELINE_BASE_X + i * 50},${
-          yCoord + height - 10 - curr[lifelineName] * 50
-        }`;
-        if (
-          i < arr.length - 1 &&
-          curr[lifelineName] !== arr[i + 1][lifelineName]
-        ) {
-          acc += ` ${LIFELINE_BASE_X + (i + 1) * 50},${
-            yCoord + height - 10 - curr[lifelineName] * 50
-          }`;
-        }
-        return acc;
-      },
-      ""
-    )}" fill="none" stroke="black" style="stroke-width:3px"/>`
+    `<polyline points="${getStateLineCoords(
+      ticks,
+      lifelineName,
+      yCoord + height
+    )
+      .flat()
+      .map(([x, y]) => `${x},${y}`)
+      .join(" ")}" fill="none" stroke="black" style="stroke-width:2px"/>`
   );
 
   return [ret.join(""), height + 15];
+}
+
+function drawLegends(numTicks: number, yCoord: number): string {
+  const ret = [];
+  for (let i = 0; i < numTicks; i++) {
+    ret.push(
+      `<text text-anchor="middle" x="${
+        i * 50 + LIFELINE_BASE_X
+      }" y="${yCoord}" class="legend">${i}</text>`
+    );
+  }
+
+  return ret.join("");
+}
+
+/*
+ * [[x, y], [x, y]]
+ * [[x, y], [x, y]]
+ * [[x, y], [x, y]]
+ * [[x, y], [x, y]]
+ *
+ * */
+
+function getStateLineCoords(
+  ticks: ProcessedTick[],
+  lifelineName: string,
+  yCoord: number
+): [number, number][][] {
+  return ticks.reduce((acc, curr, i, arr) => {
+    const pointsForThisTick: [number, number][] = [];
+    if (i > 0 && curr[lifelineName] !== arr[i - 1][lifelineName]) {
+      pointsForThisTick.push([
+        LIFELINE_BASE_X + i * 50,
+        yCoord - 10 - arr[i - 1][lifelineName] * 50,
+      ]);
+    }
+    pointsForThisTick.push([
+      LIFELINE_BASE_X + i * 50,
+      yCoord - 10 - curr[lifelineName] * 50,
+    ]);
+    acc.push(pointsForThisTick);
+    return acc;
+  }, [] as [number, number][][]);
+}
+
+function arrow(from: [number, number], to: [number, number]) {
+  return `<polyline points="${from[0]},${from[1]} ${to[0]},${to[1]}" fill="none" stroke="black" marker-end="url(#arrow)" />`;
 }

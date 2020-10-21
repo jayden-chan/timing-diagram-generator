@@ -1,4 +1,4 @@
-import { Diagram } from "./parser";
+import { Arrow, Diagram } from "./parser";
 
 export type ProcessedTick = { [key: string]: number };
 
@@ -7,6 +7,7 @@ export type ProcessedDiagram = {
   lifelines: Set<string>;
   states: { [key: string]: string[] };
   ticks: ProcessedTick[];
+  arrows: Arrow[];
 };
 
 export function infillTicks(d: Diagram): ProcessedDiagram {

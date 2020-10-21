@@ -5,6 +5,7 @@
     "outDir": "dist",
     "module": "commonjs",
     "target": "ES6",
+    "lib": ["es2020"],
     "inlineSourceMap": true,
     "strict": true
   }

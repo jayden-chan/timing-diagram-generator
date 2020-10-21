@@ -4,20 +4,18 @@ import { parse } from "./parser";
 import { infillTicks } from "./diagram";
 import { render } from "./svg";
 
-const read = promisify(readFile);
-
 async function main(): Promise<number> {
   if (process.argv.length < 3) {
     console.error("You must specify an input file.");
     return 1;
   }
 
-  const file = await read(process.argv[2], { encoding: "utf8" });
+  const file = await promisify(readFile)(process.argv[2], { encoding: "utf8" });
   const d = parse(file);
-  console.error(d);
+  process.argv.includes("--debug") && console.error(d);
 
   const processed = infillTicks(d);
-  console.error(processed);
+  process.argv.includes("--debug") && console.error(processed);
 
   const svg = render(processed);
   console.log(svg);

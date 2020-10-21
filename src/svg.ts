@@ -9,11 +9,6 @@ export function render(d: ProcessedDiagram): string {
 
   svg.push(`<text x="10" y="30" class="title">${d.title}</text>`);
 
-  // const innerSVG = `<rect x="${x + 20}" y="${
-  //   y + 12.5
-  // }" rx="10" ry="10" width="${width - 40}" height="110" class="inner-key" />`;
-  // svg += innerSVG;
-
   let currHeight = 70;
   [...d.lifelines].forEach((l) => {
     const [boxSvg, height] = genLifelineBox(
@@ -35,10 +30,7 @@ export function render(d: ProcessedDiagram): string {
 <style>
   .title { font: bold 20px sans-serif }
   .state-label { font-family: sans-serif }
-  .label-lg { font: bold 60px Nimbus Sans; fill: white; }
-  .layer { font: bold 100px Nimbus Sans; fill: black; }
-  .outer-key { fill: #000; stroke: white; stroke-width: 3 }
-  .inner-key { fill: #333; }
+  .lifeline-label { font: bold 17px sans-serif }
 </style>
 <polyline points="${width - 3},0 ${width - 3},${height - 3} 0,${
     height - 3
@@ -75,6 +67,12 @@ function genLifelineBox(
     } ${(numTicks - 1) * 50 + LIFELINE_BASE_X + 10},${yCoord + height} ${
       LIFELINE_BASE_X - 10
     },${yCoord + height}" fill="none" stroke="black" />`
+  );
+
+  ret.push(
+    `<text class="lifeline-label" x="20" y="${
+      yCoord + height / 2
+    }">: ${lifelineName}</text>`
   );
 
   for (let i = 0; i < numTicks; i++) {

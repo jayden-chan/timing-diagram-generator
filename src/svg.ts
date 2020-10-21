@@ -163,14 +163,6 @@ function drawLegends(numTicks: number, yCoord: number): string {
   return ret.join("");
 }
 
-/*
- * [[x, y], [x, y]]
- * [[x, y], [x, y]]
- * [[x, y], [x, y]]
- * [[x, y], [x, y]]
- *
- * */
-
 function getStateLineCoords(
   ticks: ProcessedTick[],
   lifelineName: string,

@@ -11,6 +11,9 @@ export type Arrow = {
   destTick: number;
   originIdx: number;
   destIdx: number;
+  label?: string;
+  labelPos: number;
+  labelSide: "R" | "L";
 };
 
 export type Diagram = {
@@ -70,28 +73,21 @@ const TEMPLATES: { [key: string]: Template } = {
     },
   },
   arrow: {
-    regex: /^T(\d+):"(.*)" -> T(\d+):"(.*)"$/,
-    fn: (d, m1, m2, m3, m4) => {
+    regex: /^T(\d+):"(.*?)"(?::(\d))? -> T(\d+):"(.*?)"(?::(\d))?(?: "(.*?)"(?::(-?\d+))?)?(?::(R|L))?$/,
+    fn: (d, ...m) => {
+      const label = m[6] ? stringSanitize(m[6]) : undefined;
+      const labelPos = m[7] ? Number(m[7]) : 0;
+      const labelSide = (m[8] && m[8] === "R") || m[8] === "L" ? m[8] : "R";
       d.arrows.push({
-        originLifeline: stringSanitize(m2),
-        originTick: Number(m1),
-        destLifeline: stringSanitize(m4),
-        destTick: Number(m3),
-        originIdx: 0,
-        destIdx: 0,
-      });
-    },
-  },
-  advancedArrow: {
-    regex: /^T(\d+):"(.*)":(\d) -> T(\d+):"(.*)":(\d)$/,
-    fn: (d, m1, m2, m3, m4, m5, m6) => {
-      d.arrows.push({
-        originLifeline: stringSanitize(m2),
-        originTick: Number(m1),
-        destLifeline: stringSanitize(m5),
-        destTick: Number(m4),
-        originIdx: Number(m3),
-        destIdx: Number(m6),
+        originLifeline: stringSanitize(m[1]),
+        originTick: Number(m[0]),
+        destLifeline: stringSanitize(m[4]),
+        destTick: Number(m[3]),
+        originIdx: Number(m[2] ?? 0),
+        destIdx: Number(m[5] ?? 0),
+        label,
+        labelPos,
+        labelSide,
       });
     },
   },

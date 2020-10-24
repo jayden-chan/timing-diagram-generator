@@ -22,12 +22,12 @@ state "Client 2" "Rendering" 2
 state "Client 2" "Sending update to server" 3
 
 # Arrows
-T4:"Client 2":0 -> T5:"Server":1
-T6:"Client 1":0 -> T7:"Server":1
-T12:"Client 2":0 -> T13:"Server":1
-T14:"Client 1":0 -> T15:"Server":1
-T16:"Client 2":0 -> T17:"Server":1
-T18:"Client 1":0 -> T19:"Server":1
+T4:"Client 2":0 -> T5:"Server":1 "WS Update":-7:L
+T6:"Client 1":0 -> T7:"Server":1 "WS Update ":-4:L
+T12:"Client 2":0 -> T13:"Server":1 "WS Update":-7:L
+T14:"Client 1":0 -> T15:"Server":1 "WS Update ":-4:L
+T16:"Client 2" -> T17:"Server":1 "WS Update ":95:L
+T18:"Client 1" -> T19:"Server":1 "WS Update ":-4:L
 
 # Timing definitions
 T0 "Client 1" 0

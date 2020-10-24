@@ -28,22 +28,32 @@ export function render(d: ProcessedDiagram): string {
   });
 
   d.arrows.forEach((a) => {
-    const originPoints = getStateLineCoords(
+    const originPoint = getStateLineCoords(
       d.ticks,
       a.originLifeline,
       heights[a.originLifeline]
-    );
-    const destPoints = getStateLineCoords(
+    )[a.originTick][a.originIdx];
+
+    const destPoint = getStateLineCoords(
       d.ticks,
       a.destLifeline,
       heights[a.destLifeline]
-    );
-    svg.push(
-      arrow(
-        originPoints[a.originTick][a.originIdx],
-        destPoints[a.destTick][a.destIdx]
-      )
-    );
+    )[a.destTick][a.destIdx];
+
+    svg.push(arrow(originPoint, destPoint));
+
+    if (a.label) {
+      const labelPos = a.labelPos / 100;
+      const anchor = a.labelSide === "R" ? "start" : "end";
+      svg.push(
+        text(
+          lerp(originPoint, destPoint, labelPos),
+          "state-label",
+          a.label,
+          anchor
+        )
+      );
+    }
   });
 
   svg.push(drawLegends(d.ticks.length, currHeight - 20));
@@ -57,6 +67,7 @@ export function render(d: ProcessedDiagram): string {
   .state-label { font-family: sans-serif }
   .lifeline-label { font: bold 17px sans-serif }
   .legend { font-family: sans-serif }
+  text { white-space: pre }
 </style>
 <defs>
   <!-- arrowhead marker definition -->
@@ -189,9 +200,12 @@ function arrow(from: [number, number], to: [number, number]) {
 function text(
   [x, y]: [number, number],
   className: string,
-  text: string
+  text: string,
+  anchor?: "start" | "end" | "middle"
 ): string {
-  return `<text x="${x}" y="${y}" class="${className}">${text}</text>`;
+  return `<text ${
+    anchor ? `text-anchor="${anchor}"` : ""
+  } x="${x}" y="${y}" class="${className}">${text}</text>`;
 }
 
 function polyline(points: [number, number][]): string {
@@ -202,4 +216,18 @@ function polyline(points: [number, number][]): string {
 
 function line([x1, y1]: [number, number], [x2, y2]: [number, number]): string {
   return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="black" />`;
+}
+
+function lerp(
+  [x1, y1]: [number, number],
+  [x2, y2]: [number, number],
+  percent: number
+): [number, number] {
+  const absXDiff = Math.abs(x2 - x1);
+  const absYDiff = Math.abs(y2 - y1);
+
+  return [
+    x1 + absXDiff * Math.sign(x2 - x1) * percent,
+    y1 + absYDiff * Math.sign(y2 - y1) * percent,
+  ];
 }

@@ -32,28 +32,28 @@ export type Template = {
 
 function stringSanitize(s: string): string {
   return s
-    .replace("&", "&amp;")
-    .replace('\\"', "&quot;")
-    .replace("'", "&apos;")
-    .replace(">", "&gt;")
-    .replace("<", "&lt;");
+    .replace(/&/g, "&amp;")
+    .replace(/\\"/g, "&quot;")
+    .replace(/'/g, "&apos;")
+    .replace(/>/g, "&gt;")
+    .replace(/</g, "&lt;");
 }
 
 const TEMPLATES: { [key: string]: Template } = {
   title: {
-    regex: /^title "(.*)"$/,
+    regex: /^title "((?:[^"\\]|\\.)*)"$/,
     fn: (d, m) => {
       d.title = stringSanitize(m);
     },
   },
   lifeline: {
-    regex: /^lifeline "(.*)"$/,
+    regex: /^lifeline "((?:[^"\\]|\\.)*)"$/,
     fn: (d, m) => {
       d.lifelines.add(stringSanitize(m));
     },
   },
   state: {
-    regex: /^state "(.*)" "(.*)" (\d+)$/,
+    regex: /^state "((?:[^"\\]|\\.)*)" "((?:[^"\\]|\\.)*)" (\d+)$/,
     fn: (d, m1, m2, m3) => {
       const lifelineName = stringSanitize(m1);
       const stateName = stringSanitize(m2);
@@ -64,7 +64,7 @@ const TEMPLATES: { [key: string]: Template } = {
     },
   },
   tick: {
-    regex: /^T(\d+) "(.*)" (\d+)$/,
+    regex: /^T(\d+) "((?:[^"\\]|\\.)*)" (\d+)$/,
     fn: (d, m1, m2, m3) => {
       d.ticks.push({
         time: Number(m1),
@@ -74,7 +74,7 @@ const TEMPLATES: { [key: string]: Template } = {
     },
   },
   arrow: {
-    regex: /^T(\d+):"(.*?)"(?::(\d))? (->|=>) T(\d+):"(.*?)"(?::(\d))?(?: "(.*?)"(?::(-?\d+))?)?(?::(R|L))?$/,
+    regex: /^T(\d+):"((?:[^"\\]|\\.)*)"(?::(\d))? (->|=>) T(\d+):"((?:[^"\\]|\\.)*)"(?::(\d))?(?: "((?:[^"\\]|\\.)*)"(?::(-?\d+))?)?(?::(R|L))?$/,
     fn: (d, ...m) => {
       const label = m[7] ? stringSanitize(m[7]) : undefined;
       const labelPos = m[8] ? Number(m[8]) : 0;

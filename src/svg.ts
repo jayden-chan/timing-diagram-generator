@@ -1,10 +1,13 @@
 import { ProcessedDiagram, ProcessedTick } from "./diagram";
 
-const LIFELINE_BASE_X = 400;
+const LIFELINE_BASE_X = 350;
 const BORDER_WIDTH = 2;
+const STATE_HEIGHT = 40;
+const STATE_WIDTH = 40;
+const LIFELINE_BOX_MARGIN = 80;
 
 export function render(d: ProcessedDiagram): string {
-  const width = (d.ticks.length - 1) * 50 + LIFELINE_BASE_X + 30;
+  const width = (d.ticks.length - 1) * STATE_WIDTH + LIFELINE_BASE_X + 30;
   const labelBoxHeight = 45;
   const labelBoxWidth = d.title.length * 14;
   const svg = [];
@@ -28,31 +31,30 @@ export function render(d: ProcessedDiagram): string {
   });
 
   d.arrows.forEach((a) => {
-    const originPoint = getStateLineCoords(
+    const originPoint = getTimelineCoords(
       d.ticks,
       a.originLifeline,
       heights[a.originLifeline]
     )[a.originTick][a.originIdx];
 
-    const destPoint = getStateLineCoords(
+    const destPoint = getTimelineCoords(
       d.ticks,
       a.destLifeline,
       heights[a.destLifeline]
     )[a.destTick][a.destIdx];
 
-    svg.push(arrow(originPoint, destPoint));
+    svg.push(
+      a.style === "solid"
+        ? arrow(originPoint, destPoint)
+        : dashedArrow(originPoint, destPoint)
+    );
 
     if (a.label) {
       const labelPos = a.labelPos / 100;
       const anchor = a.labelSide === "R" ? "start" : "end";
-      svg.push(
-        text(
-          lerp(originPoint, destPoint, labelPos),
-          "state-label",
-          a.label,
-          anchor
-        )
-      );
+      const [x, y] = lerp(originPoint, destPoint, labelPos);
+      const xOffset = a.labelSide === "R" ? 10 : -10;
+      svg.push(text([x + xOffset, y], "state-label", a.label, anchor));
     }
   });
 
@@ -102,16 +104,16 @@ function genLifelineBox(
   states: string[],
   ticks: ProcessedTick[]
 ): [string, number] {
-  const height = (numStates - 1) * 50 + 25;
+  const height = (numStates - 1) * STATE_HEIGHT + LIFELINE_BOX_MARGIN;
   const ret = [];
   // outer box
   // point order BL->TL->TR->BR->BL
   ret.push(
     polyline([
       [LIFELINE_BASE_X - 10, yCoord + height],
-      [LIFELINE_BASE_X - 10, yCoord - 5],
-      [(numTicks - 1) * 50 + LIFELINE_BASE_X + 10, yCoord - 5],
-      [(numTicks - 1) * 50 + LIFELINE_BASE_X + 10, yCoord + height],
+      [LIFELINE_BASE_X - 10, yCoord],
+      [(numTicks - 1) * STATE_WIDTH + LIFELINE_BASE_X + 10, yCoord],
+      [(numTicks - 1) * STATE_WIDTH + LIFELINE_BASE_X + 10, yCoord + height],
       [LIFELINE_BASE_X - 10, yCoord + height],
     ])
   );
@@ -121,35 +123,29 @@ function genLifelineBox(
   for (let i = 0; i < numTicks; i++) {
     ret.push(
       line(
-        [i * 50 + LIFELINE_BASE_X, yCoord + height - 5],
-        [i * 50 + LIFELINE_BASE_X, yCoord + height + 10]
+        [i * STATE_WIDTH + LIFELINE_BASE_X, yCoord + height - 5],
+        [i * STATE_WIDTH + LIFELINE_BASE_X, yCoord + height + 10]
       )
     );
   }
 
   for (let i = 0; i < numStates; i++) {
-    ret.push(
-      line(
-        [LIFELINE_BASE_X - 20, yCoord + height - 10 - i * 50],
-        [LIFELINE_BASE_X, yCoord + height - 10 - i * 50]
-      )
-    );
+    const y = yCoord + height - LIFELINE_BOX_MARGIN / 2 - i * STATE_HEIGHT;
+    ret.push(line([LIFELINE_BASE_X - 20, y], [LIFELINE_BASE_X, y]));
   }
 
   states.forEach((state, i) => {
     ret.push(
       `<text text-anchor="end" class="state-label" x="${
         LIFELINE_BASE_X - 25
-      }" y="${yCoord + height - 5 - i * 50}">${state}</text>`
+      }" y="${
+        yCoord + height + 5 - LIFELINE_BOX_MARGIN / 2 - i * STATE_HEIGHT
+      }">${state}</text>`
     );
   });
 
   ret.push(
-    `<polyline points="${getStateLineCoords(
-      ticks,
-      lifelineName,
-      yCoord + height
-    )
+    `<polyline points="${getTimelineCoords(ticks, lifelineName, yCoord + height)
       .flat()
       .map(([x, y]) => `${x},${y}`)
       .join(" ")}" fill="none" stroke="black" style="stroke-width:2px"/>`
@@ -163,7 +159,7 @@ function drawLegends(numTicks: number, yCoord: number): string {
   for (let i = 0; i < numTicks; i++) {
     ret.push(
       `<text text-anchor="middle" x="${
-        i * 50 + LIFELINE_BASE_X
+        i * STATE_WIDTH + LIFELINE_BASE_X
       }" y="${yCoord}" class="legend">${i}</text>`
     );
   }
@@ -171,7 +167,7 @@ function drawLegends(numTicks: number, yCoord: number): string {
   return ret.join("");
 }
 
-function getStateLineCoords(
+function getTimelineCoords(
   ticks: ProcessedTick[],
   lifelineName: string,
   yCoord: number
@@ -180,13 +176,15 @@ function getStateLineCoords(
     const pointsForThisTick: [number, number][] = [];
     if (i > 0 && curr[lifelineName] !== arr[i - 1][lifelineName]) {
       pointsForThisTick.push([
-        LIFELINE_BASE_X + i * 50,
-        yCoord - 10 - arr[i - 1][lifelineName] * 50,
+        LIFELINE_BASE_X + i * STATE_WIDTH,
+        yCoord -
+          LIFELINE_BOX_MARGIN / 2 -
+          arr[i - 1][lifelineName] * STATE_HEIGHT,
       ]);
     }
     pointsForThisTick.push([
-      LIFELINE_BASE_X + i * 50,
-      yCoord - 10 - curr[lifelineName] * 50,
+      LIFELINE_BASE_X + i * STATE_WIDTH,
+      yCoord - LIFELINE_BOX_MARGIN / 2 - curr[lifelineName] * STATE_HEIGHT,
     ]);
     acc.push(pointsForThisTick);
     return acc;
@@ -195,6 +193,10 @@ function getStateLineCoords(
 
 function arrow(from: [number, number], to: [number, number]) {
   return `<polyline points="${from[0]},${from[1]} ${to[0]},${to[1]}" fill="none" stroke="black" marker-end="url(#arrow)" />`;
+}
+
+function dashedArrow(from: [number, number], to: [number, number]) {
+  return `<polyline points="${from[0]},${from[1]} ${to[0]},${to[1]}" fill="none" stroke="black" stroke-dasharray="10" marker-end="url(#arrow)" />`;
 }
 
 function text(

@@ -14,6 +14,7 @@ export type Arrow = {
   label?: string;
   labelPos: number;
   labelSide: "R" | "L";
+  style: "solid" | "dashed";
 };
 
 export type Diagram = {
@@ -73,21 +74,22 @@ const TEMPLATES: { [key: string]: Template } = {
     },
   },
   arrow: {
-    regex: /^T(\d+):"(.*?)"(?::(\d))? -> T(\d+):"(.*?)"(?::(\d))?(?: "(.*?)"(?::(-?\d+))?)?(?::(R|L))?$/,
+    regex: /^T(\d+):"(.*?)"(?::(\d))? (->|=>) T(\d+):"(.*?)"(?::(\d))?(?: "(.*?)"(?::(-?\d+))?)?(?::(R|L))?$/,
     fn: (d, ...m) => {
-      const label = m[6] ? stringSanitize(m[6]) : undefined;
-      const labelPos = m[7] ? Number(m[7]) : 0;
-      const labelSide = (m[8] && m[8] === "R") || m[8] === "L" ? m[8] : "R";
+      const label = m[7] ? stringSanitize(m[7]) : undefined;
+      const labelPos = m[8] ? Number(m[8]) : 0;
+      const labelSide = (m[9] && m[9] === "R") || m[9] === "L" ? m[9] : "R";
       d.arrows.push({
         originLifeline: stringSanitize(m[1]),
         originTick: Number(m[0]),
-        destLifeline: stringSanitize(m[4]),
-        destTick: Number(m[3]),
+        destLifeline: stringSanitize(m[5]),
+        destTick: Number(m[4]),
         originIdx: Number(m[2] ?? 0),
-        destIdx: Number(m[5] ?? 0),
+        destIdx: Number(m[6] ?? 0),
         label,
         labelPos,
         labelSide,
+        style: m[3] === "->" ? "solid" : "dashed",
       });
     },
   },

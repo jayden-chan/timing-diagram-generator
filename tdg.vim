@@ -14,8 +14,8 @@ syn match tdgArrow '->'
 syn keyword tdgBasicKeyword lifeline state nextgroup=tdgQuotedString skipwhite
 syn keyword tdgBasicKeyword state nextgroup=tdgQuotedString,tdgQuotedString skipwhite
 syn keyword tdgTitleKeyword title nextgroup=tdgQuotedString skipwhite
-syn match tdgLabelAlignL ':L$'
-syn match tdgLabelAlignR ':R$'
+syn match tdgLabelAlignL ':\zsL$'
+syn match tdgLabelAlignR ':\zsR$'
 
 syn keyword tdgTodo contained TODO FIXME XXX NOTE
 syn match tdgComment "#.*$" contains=tdgTodo

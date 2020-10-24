@@ -1,13 +1,16 @@
-title "My Timing Diagram"
+title "My Timing & Testing Diagram"
 
+# These are the lifelines
 lifeline "Client 1"
 lifeline "Client 2"
 lifeline "Server"
 
+# State definitions for the Server
 state "Server" "Waiting for updates" 0
 state "Server" "Computing state" 1
 state "Server" "Updating clients" 2
 
+# State definitions for the Client
 state "Client 1" "Waiting for keyboard input" 0
 state "Client 1" "Updating internal state" 1
 state "Client 1" "Rendering" 2
@@ -18,6 +21,7 @@ state "Client 2" "Updating internal state" 1
 state "Client 2" "Rendering" 2
 state "Client 2" "Sending update to server" 3
 
+# Arrows
 T4:"Client 2":0 -> T5:"Server":1
 T6:"Client 1":0 -> T7:"Server":1
 T12:"Client 2":0 -> T13:"Server":1
@@ -25,6 +29,7 @@ T14:"Client 1":0 -> T15:"Server":1
 T16:"Client 2":0 -> T17:"Server":1
 T18:"Client 1":0 -> T19:"Server":1
 
+# Timing definitions
 T0 "Client 1" 0
 T0 "Client 2" 0
 T0 "Server" 0

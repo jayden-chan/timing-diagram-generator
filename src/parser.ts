@@ -26,45 +26,56 @@ export type Template = {
   fn: (d: Diagram, ...m: string[]) => void;
 };
 
+function stringSanitize(s: string): string {
+  return s
+    .replace("&", "&amp;")
+    .replace('\\"', "&quot;")
+    .replace("'", "&apos;")
+    .replace(">", "&gt;")
+    .replace("<", "&lt;");
+}
+
 const TEMPLATES: { [key: string]: Template } = {
   title: {
-    regex: /title "(.*)"$/,
+    regex: /^title "(.*)"$/,
     fn: (d, m) => {
-      d.title = m;
+      d.title = stringSanitize(m);
     },
   },
   lifeline: {
-    regex: /lifeline "(.*)"$/,
+    regex: /^lifeline "(.*)"$/,
     fn: (d, m) => {
-      d.lifelines.add(m);
+      d.lifelines.add(stringSanitize(m));
     },
   },
   state: {
-    regex: /state "(.*)" "(.*)" (\d+)/,
+    regex: /^state "(.*)" "(.*)" (\d+)$/,
     fn: (d, m1, m2, m3) => {
-      if (d.states[m1] === undefined) {
-        d.states[m1] = [];
+      const lifelineName = stringSanitize(m1);
+      const stateName = stringSanitize(m2);
+      if (d.states[lifelineName] === undefined) {
+        d.states[lifelineName] = [];
       }
-      d.states[m1][Number(m3)] = m2;
+      d.states[lifelineName][Number(m3)] = stateName;
     },
   },
   tick: {
-    regex: /T(\d+) "(.*)" (\d+)/,
+    regex: /^T(\d+) "(.*)" (\d+)$/,
     fn: (d, m1, m2, m3) => {
       d.ticks.push({
         time: Number(m1),
-        lifeline: m2,
+        lifeline: stringSanitize(m2),
         state_idx: Number(m3),
       });
     },
   },
   arrow: {
-    regex: /T(\d+):"(.*)" -> T(\d+):"(.*)"$/,
+    regex: /^T(\d+):"(.*)" -> T(\d+):"(.*)"$/,
     fn: (d, m1, m2, m3, m4) => {
       d.arrows.push({
-        originLifeline: m2,
+        originLifeline: stringSanitize(m2),
         originTick: Number(m1),
-        destLifeline: m4,
+        destLifeline: stringSanitize(m4),
         destTick: Number(m3),
         originIdx: 0,
         destIdx: 0,
@@ -72,12 +83,12 @@ const TEMPLATES: { [key: string]: Template } = {
     },
   },
   advancedArrow: {
-    regex: /T(\d+):"(.*)":(\d) -> T(\d+):"(.*)":(\d)$/,
+    regex: /^T(\d+):"(.*)":(\d) -> T(\d+):"(.*)":(\d)$/,
     fn: (d, m1, m2, m3, m4, m5, m6) => {
       d.arrows.push({
-        originLifeline: m2,
+        originLifeline: stringSanitize(m2),
         originTick: Number(m1),
-        destLifeline: m5,
+        destLifeline: stringSanitize(m5),
         destTick: Number(m4),
         originIdx: Number(m3),
         destIdx: Number(m6),
@@ -96,6 +107,9 @@ export function parse(input: string): Diagram {
   };
 
   input.split(/\r?\n/g).forEach((line) => {
+    // Ignore commented lines
+    if (line.startsWith("#")) return;
+
     Object.values(TEMPLATES).forEach((template) => {
       const matches = template.regex.exec(line);
       if (matches !== null) {

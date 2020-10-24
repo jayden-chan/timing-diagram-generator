@@ -1,14 +1,15 @@
 import { ProcessedDiagram, ProcessedTick } from "./diagram";
+
 const LIFELINE_BASE_X = 400;
 const BORDER_WIDTH = 2;
 
 export function render(d: ProcessedDiagram): string {
   const width = (d.ticks.length - 1) * 50 + LIFELINE_BASE_X + 30;
   const labelBoxHeight = 45;
-  const labelBoxWidth = 300;
+  const labelBoxWidth = d.title.length * 14;
   const svg = [];
 
-  svg.push(`<text x="10" y="28" class="title">${d.title}</text>`);
+  svg.push(text([10, 28], "title", d.title));
 
   const heights: { [key: string]: number } = {};
   let currHeight = 70;
@@ -95,36 +96,32 @@ function genLifelineBox(
   // outer box
   // point order BL->TL->TR->BR->BL
   ret.push(
-    `<polyline points="${LIFELINE_BASE_X - 10},${yCoord + height} ${
-      LIFELINE_BASE_X - 10
-    },${yCoord - 5} ${(numTicks - 1) * 50 + LIFELINE_BASE_X + 10},${
-      yCoord - 5
-    } ${(numTicks - 1) * 50 + LIFELINE_BASE_X + 10},${yCoord + height} ${
-      LIFELINE_BASE_X - 10
-    },${yCoord + height}" fill="none" stroke="black" />`
+    polyline([
+      [LIFELINE_BASE_X - 10, yCoord + height],
+      [LIFELINE_BASE_X - 10, yCoord - 5],
+      [(numTicks - 1) * 50 + LIFELINE_BASE_X + 10, yCoord - 5],
+      [(numTicks - 1) * 50 + LIFELINE_BASE_X + 10, yCoord + height],
+      [LIFELINE_BASE_X - 10, yCoord + height],
+    ])
   );
 
-  ret.push(
-    `<text class="lifeline-label" x="20" y="${
-      yCoord + height / 2
-    }">: ${lifelineName}</text>`
-  );
+  ret.push(text([20, yCoord + height / 2], "lifeline-label", lifelineName));
 
   for (let i = 0; i < numTicks; i++) {
     ret.push(
-      `<line x1="${i * 50 + LIFELINE_BASE_X}" y1="${yCoord + height - 5}" x2="${
-        i * 50 + LIFELINE_BASE_X
-      }" y2="${yCoord + height + 10}" stroke="black" />`
+      line(
+        [i * 50 + LIFELINE_BASE_X, yCoord + height - 5],
+        [i * 50 + LIFELINE_BASE_X, yCoord + height + 10]
+      )
     );
   }
 
   for (let i = 0; i < numStates; i++) {
     ret.push(
-      `<line x1="${LIFELINE_BASE_X - 20}" y1="${
-        yCoord + height - 10 - i * 50
-      }" x2="${LIFELINE_BASE_X}" y2="${
-        yCoord + height - 10 - i * 50
-      }" stroke="black" />`
+      line(
+        [LIFELINE_BASE_X - 20, yCoord + height - 10 - i * 50],
+        [LIFELINE_BASE_X, yCoord + height - 10 - i * 50]
+      )
     );
   }
 
@@ -187,4 +184,22 @@ function getStateLineCoords(
 
 function arrow(from: [number, number], to: [number, number]) {
   return `<polyline points="${from[0]},${from[1]} ${to[0]},${to[1]}" fill="none" stroke="black" marker-end="url(#arrow)" />`;
+}
+
+function text(
+  [x, y]: [number, number],
+  className: string,
+  text: string
+): string {
+  return `<text x="${x}" y="${y}" class="${className}">${text}</text>`;
+}
+
+function polyline(points: [number, number][]): string {
+  return `<polyline points="${points
+    .map(([x, y]) => `${x},${y}`)
+    .join(" ")}" fill="none" stroke="black" />`;
+}
+
+function line([x1, y1]: [number, number], [x2, y2]: [number, number]): string {
+  return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="black" />`;
 }

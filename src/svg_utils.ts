@@ -8,7 +8,7 @@ export function generateSpan(
   ret.push(doubleSidedArrow([x, y], [x + length, y]));
   ret.push(line([x, y - sideHeight], [x, y + sideHeight]));
   ret.push(line([x + length, y - sideHeight], [x + length, y + sideHeight]));
-  ret.push(text([x + length / 2, y - 10], "legend", label, "middle"));
+  ret.push(text([x + length / 2, y - 10], "simple", label, "middle"));
   return ret.join("");
 }
 

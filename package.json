@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc -w",
+    "run-test": "node --enable-source-maps dist/index.js tests/website-example.tdg --debug > test.svg",
     "start": "node dist/index.js"
   },
   "repository": {

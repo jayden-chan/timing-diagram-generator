@@ -11,9 +11,9 @@ import {
 } from "./svg_utils";
 
 const TIMELINE_STROKE_WIDTH = 2;
-const BORDER_WIDTH = 2;
 const TICK_HEIGHT = 40;
 const TICK_WIDTH = 50;
+const LIFELINE_OUTER_MARGIN = 45;
 const LIFELINE_BOX_MARGIN_UPPER = 50;
 const LIFELINE_BOX_MARGIN_LOWER = 20;
 const LIFELINE_BOX_MARGIN =
@@ -29,8 +29,6 @@ export function render(d: ProcessedDiagram): string {
 
   const lifelineBaseX = (longestLifelineName + longestStateName) * 11;
   const width = (d.ticks.length - 1) * TICK_WIDTH + lifelineBaseX + 30;
-  const labelBoxHeight = 45;
-  const labelBoxWidth = d.title.length * 14;
   const svg = [];
 
   svg.push(text([10, 28], "title", d.title));
@@ -40,17 +38,18 @@ export function render(d: ProcessedDiagram): string {
   let currHeight = 70;
 
   Object.keys(d.lifelines).forEach((l) => {
-    const [boxSvg, height] = genLifelineBox(
-      d.ticks.length,
-      d.states[l].length,
-      lifelineBaseX,
-      currHeight,
-      l,
-      d.states[l],
-      d.ticks
-    );
-    currHeight += height + 30;
-    const h = currHeight - 45;
+    const [boxSvg, height] = genLifelineBox({
+      lifelineBaseX: lifelineBaseX,
+      yCoord: currHeight,
+      lifelineName: l,
+      states: d.states[l],
+      ticks: d.ticks,
+    });
+
+    currHeight += height;
+    const h = currHeight;
+    currHeight += LIFELINE_OUTER_MARGIN;
+
     heights[l] = h;
     lifelineCoords[l] = getTimelineCoords(d.ticks, l, lifelineBaseX, h);
     svg.push(boxSvg);
@@ -86,64 +85,37 @@ export function render(d: ProcessedDiagram): string {
       const anchor = a.labelSide === "R" ? "start" : "end";
       const [x, y] = lerp(originPoint, destPoint, labelPos);
       const xOffset = a.labelSide === "R" ? 10 : -10;
-      svg.push(text([x + xOffset, y], "state-label", a.label, anchor));
+      svg.push(text([x + xOffset, y], "simple", a.label, anchor));
     }
   });
 
   svg.push(drawLegends(d.ticks.length, currHeight - 20, lifelineBaseX));
+
+  const labelBoxHeight = 45;
+  const labelBoxWidth = d.title.length * 14;
+  svg.unshift(
+    getSVGHeader([width, currHeight], [labelBoxWidth, labelBoxHeight])
+  );
+
   svg.push("</svg>");
-
-  const height = currHeight;
-  let header = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-<style>
-  .title { font: bold 20px sans-serif }
-  .state-label { font-family: sans-serif }
-  .lifeline-label { font: bold 17px sans-serif }
-  .legend { font-family: sans-serif }
-  text { white-space: pre }
-</style>
-<defs>
-  <!-- arrowhead marker definition -->
-  <marker id="arrow" viewBox="0 0 15 15" refX="15" refY="7.5"
-      markerWidth="9" markerHeight="9"
-      orient="auto-start-reverse">
-    <path d="M 0 0 L 15 7.5 L 0 15 z" />
-  </marker>
-</defs>
-<polyline points="${width - BORDER_WIDTH},0 ${width - BORDER_WIDTH},${
-    height - BORDER_WIDTH
-  } 0,${
-    height - BORDER_WIDTH
-  }" stroke="black" fill="none" style="stroke-width:${BORDER_WIDTH}px" />
-<polyline points="0,${labelBoxHeight} ${
-    labelBoxWidth - 20
-  },${labelBoxHeight} ${labelBoxWidth},${
-    labelBoxHeight - 20
-  } ${labelBoxWidth},0" stroke="black" fill="none" style="stroke-width:2px" />
-`;
-
-  svg.unshift(header);
-
   return svg.join("");
 }
 
-function genLifelineBox(
-  numTicks: number,
-  numStates: number,
-  lifelineBaseX: number,
-  yCoord: number,
-  lifelineName: string,
-  states: string[],
-  ticks: ProcessedTick[]
-): [string, number] {
-  const height = (numStates - 1) * TICK_HEIGHT + LIFELINE_BOX_MARGIN;
+function genLifelineBox(input: {
+  lifelineBaseX: number;
+  yCoord: number;
+  lifelineName: string;
+  states: string[];
+  ticks: ProcessedTick[];
+}): [string, number] {
+  const { lifelineBaseX, yCoord, lifelineName, states, ticks } = input;
+  const height = (states.length - 1) * TICK_HEIGHT + LIFELINE_BOX_MARGIN;
   const ret = [];
   // outer box
   ret.push(
     rect(
       [lifelineBaseX - 10, yCoord],
-      [(numTicks - 1) * TICK_WIDTH + 20, height]
+      [(ticks.length - 1) * TICK_WIDTH + 20, height]
     )
   );
 
@@ -151,30 +123,28 @@ function genLifelineBox(
   ret.push(text([20, yCoord + height / 2], "lifeline-label", lifelineName));
 
   // Bottom ticks
-  for (let i = 0; i < numTicks; i++) {
+  ticks.forEach((_, i) => {
     ret.push(
       line(
         [i * TICK_WIDTH + lifelineBaseX, yCoord + height - 5],
         [i * TICK_WIDTH + lifelineBaseX, yCoord + height + 10]
       )
     );
-  }
+  });
 
-  // Side ticks
-  for (let i = 0; i < numStates; i++) {
+  states.forEach((state, i) => {
+    // Side tick
     const y = yCoord + height - LIFELINE_BOX_MARGIN_LOWER - i * TICK_HEIGHT;
     ret.push(line([lifelineBaseX - 20, y], [lifelineBaseX - 5, y]));
-  }
 
-  // State labels
-  states.forEach((state, i) => {
+    // Label
     ret.push(
       text(
         [
           lifelineBaseX - 25,
           yCoord + height + 5 - LIFELINE_BOX_MARGIN_LOWER - i * TICK_HEIGHT,
         ],
-        "state-label",
+        "simple",
         state,
         "end"
       )
@@ -194,7 +164,7 @@ function genLifelineBox(
     )
   );
 
-  return [ret.join(""), height + 15];
+  return [ret.join(""), height];
 }
 
 function drawLegends(
@@ -207,7 +177,7 @@ function drawLegends(
     ret.push(
       `<text text-anchor="middle" x="${
         i * TICK_WIDTH + lifelineBaseX
-      }" y="${yCoord}" class="legend">${i}</text>`
+      }" y="${yCoord}" class="simple">${i}</text>`
     );
   }
 
@@ -237,4 +207,38 @@ function getTimelineCoords(
     acc.push(pointsForThisTick);
     return acc;
   }, [] as [number, number][][]);
+}
+
+function getSVGHeader(
+  [width, height]: [number, number],
+  [labelWidth, labelHeight]: [number, number]
+): string {
+  const borderWidth = 2;
+  const labelBoxEdgeSize = 20;
+  return `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+<style>
+  .title { font: bold 20px sans-serif }
+  .lifeline-label { font: bold 17px sans-serif }
+  .simple { font-family: sans-serif }
+  text { white-space: pre }
+</style>
+<defs>
+  <marker id="arrow" viewBox="0 0 15 15" refX="15" refY="7.5"
+      markerWidth="9" markerHeight="9"
+      orient="auto-start-reverse">
+    <path d="M 0 0 L 15 7.5 L 0 15 z" />
+  </marker>
+</defs>
+<polyline points="${width - borderWidth},0 ${width - borderWidth},${
+    height - borderWidth
+  } 0,${
+    height - borderWidth
+  }" stroke="black" fill="none" style="stroke-width:${borderWidth}px" />
+<polyline points="0,${labelHeight} ${
+    labelWidth - labelBoxEdgeSize
+  },${labelHeight} ${labelWidth},${
+    labelHeight - labelBoxEdgeSize
+  } ${labelWidth},0" stroke="black" fill="none" style="stroke-width:2px" />
+`;
 }

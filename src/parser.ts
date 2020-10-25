@@ -105,7 +105,7 @@ const TEMPLATES: { [key: string]: Template } = {
   style: {
     regex: /^style "((?:[^"\\]|\\.)*)" "((?:[^"\\]|\\.)*)"$/,
     fn: (d, m1, m2) => {
-      d.lifelines[stringSanitize(m1)].style = stringSanitize(m2);
+      d.lifelines[stringSanitize(m1)].style = stringSanitize(m2).toLowerCase();
     },
   },
   arrow: {

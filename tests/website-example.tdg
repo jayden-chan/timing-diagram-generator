@@ -29,9 +29,9 @@ span "Web Browser" T12:T14 "{100..500 ms}"
 T2:"Web User" -> T2:"Web Browser" "URL":40
 T3:"Web Browser" -> T4:"DNS Resolver" "Resolve URL":10
 T6:"DNS Resolver" => T7:"Web Browser"
-T8:"Web Browser" -> T9:"Web Server" "HTTP \"Request\"":17
-T11:"Web Server" => T12:"Web Browser":1
-T13:"Web Browser" => T15:"Web User"
+T8:"Web Browser" -> T9:"Web Server" "HTTP Request":17
+T11:"Web Server" => T12:"Web Browser":1 "HTTP Response":45
+T13:"Web Browser" => T15:"Web User" "Show Page":20:L
 
 T0 "Web User" 0
 T2 "Web User" 1

@@ -1,5 +1,16 @@
 import { ProcessedDiagram, ProcessedTick } from "./diagram";
+import {
+  arrow,
+  dashedArrow,
+  generateSpan,
+  lerp,
+  line,
+  polyline,
+  rect,
+  text,
+} from "./svg_utils";
 
+const TIMELINE_STROKE_WIDTH = 2;
 const BORDER_WIDTH = 2;
 const TICK_HEIGHT = 40;
 const TICK_WIDTH = 50;
@@ -16,7 +27,7 @@ export function render(d: ProcessedDiagram): string {
     ...Object.keys(d.lifelines).map((s) => s.length)
   );
 
-  const lifelineBaseX = (longestLifelineName + longestStateName) * 10;
+  const lifelineBaseX = (longestLifelineName + longestStateName) * 11;
   const width = (d.ticks.length - 1) * TICK_WIDTH + lifelineBaseX + 30;
   const labelBoxHeight = 45;
   const labelBoxWidth = d.title.length * 14;
@@ -129,19 +140,17 @@ function genLifelineBox(
   const height = (numStates - 1) * TICK_HEIGHT + LIFELINE_BOX_MARGIN;
   const ret = [];
   // outer box
-  // point order BL->TL->TR->BR->BL
   ret.push(
-    polyline([
-      [lifelineBaseX - 10, yCoord + height],
+    rect(
       [lifelineBaseX - 10, yCoord],
-      [(numTicks - 1) * TICK_WIDTH + lifelineBaseX + 10, yCoord],
-      [(numTicks - 1) * TICK_WIDTH + lifelineBaseX + 10, yCoord + height],
-      [lifelineBaseX - 10, yCoord + height],
-    ])
+      [(numTicks - 1) * TICK_WIDTH + 20, height]
+    )
   );
 
+  // Lifeline label
   ret.push(text([20, yCoord + height / 2], "lifeline-label", lifelineName));
 
+  // Bottom ticks
   for (let i = 0; i < numTicks; i++) {
     ret.push(
       line(
@@ -151,31 +160,38 @@ function genLifelineBox(
     );
   }
 
+  // Side ticks
   for (let i = 0; i < numStates; i++) {
     const y = yCoord + height - LIFELINE_BOX_MARGIN_LOWER - i * TICK_HEIGHT;
-    ret.push(line([lifelineBaseX - 20, y], [lifelineBaseX, y]));
+    ret.push(line([lifelineBaseX - 20, y], [lifelineBaseX - 5, y]));
   }
 
+  // State labels
   states.forEach((state, i) => {
     ret.push(
-      `<text text-anchor="end" class="state-label" x="${
-        lifelineBaseX - 25
-      }" y="${
-        yCoord + height + 5 - LIFELINE_BOX_MARGIN_LOWER - i * TICK_HEIGHT
-      }">${state}</text>`
+      text(
+        [
+          lifelineBaseX - 25,
+          yCoord + height + 5 - LIFELINE_BOX_MARGIN_LOWER - i * TICK_HEIGHT,
+        ],
+        "state-label",
+        state,
+        "end"
+      )
     );
   });
 
+  // Timeline
   ret.push(
-    `<polyline points="${getTimelineCoords(
-      ticks,
-      lifelineName,
-      lifelineBaseX,
-      yCoord + height
+    polyline(
+      getTimelineCoords(
+        ticks,
+        lifelineName,
+        lifelineBaseX,
+        yCoord + height
+      ).flat(),
+      TIMELINE_STROKE_WIDTH
     )
-      .flat()
-      .map(([x, y]) => `${x},${y}`)
-      .join(" ")}" fill="none" stroke="black" style="stroke-width:2px"/>`
   );
 
   return [ret.join(""), height + 15];
@@ -221,68 +237,4 @@ function getTimelineCoords(
     acc.push(pointsForThisTick);
     return acc;
   }, [] as [number, number][][]);
-}
-
-function generateSpan(
-  length: number,
-  [x, y]: [number, number],
-  label: string
-): string {
-  const ret = [];
-  const sideHeight = 7;
-  ret.push(doubleSidedArrow([x, y], [x + length, y]));
-  ret.push(line([x, y - sideHeight], [x, y + sideHeight]));
-  ret.push(line([x + length, y - sideHeight], [x + length, y + sideHeight]));
-  ret.push(text([x + length / 2, y - 10], "legend", label, "middle"));
-  return ret.join("");
-}
-
-function arrow(from: [number, number], to: [number, number]): string {
-  return `<polyline points="${from[0]},${from[1]} ${to[0]},${to[1]}" fill="none" stroke="black" marker-end="url(#arrow)" />`;
-}
-
-function dashedArrow(from: [number, number], to: [number, number]): string {
-  return `<polyline points="${from[0]},${from[1]} ${to[0]},${to[1]}" fill="none" stroke="black" stroke-dasharray="10" marker-end="url(#arrow)" />`;
-}
-
-function doubleSidedArrow(
-  from: [number, number],
-  to: [number, number]
-): string {
-  return `<polyline points="${from[0]},${from[1]} ${to[0]},${to[1]}" fill="none" stroke="black" marker-start="url(#arrow)" marker-end="url(#arrow)" />`;
-}
-
-function text(
-  [x, y]: [number, number],
-  className: string,
-  text: string,
-  anchor?: "start" | "end" | "middle"
-): string {
-  return `<text ${
-    anchor ? `text-anchor="${anchor}"` : ""
-  } x="${x}" y="${y}" class="${className}">${text}</text>`;
-}
-
-function polyline(points: [number, number][]): string {
-  return `<polyline points="${points
-    .map(([x, y]) => `${x},${y}`)
-    .join(" ")}" fill="none" stroke="black" />`;
-}
-
-function line([x1, y1]: [number, number], [x2, y2]: [number, number]): string {
-  return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="black" />`;
-}
-
-function lerp(
-  [x1, y1]: [number, number],
-  [x2, y2]: [number, number],
-  percent: number
-): [number, number] {
-  const absXDiff = Math.abs(x2 - x1);
-  const absYDiff = Math.abs(y2 - y1);
-
-  return [
-    x1 + absXDiff * Math.sign(x2 - x1) * percent,
-    y1 + absYDiff * Math.sign(y2 - y1) * percent,
-  ];
 }

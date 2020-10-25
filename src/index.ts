@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { promisify } from "util";
 import { readFile } from "fs";
 import { parse } from "./parser";

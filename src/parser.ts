@@ -17,10 +17,26 @@ export type Arrow = {
   style: "solid" | "dashed";
 };
 
+export type States = {
+  [key: string]: string[];
+};
+
+export type Span = {
+  originTick: number;
+  destTick: number;
+  lifeline: string;
+  label: string;
+};
+
 export type Diagram = {
   title: string;
-  lifelines: Set<string>;
-  states: { [key: string]: string[] };
+  lifelines: {
+    [key: string]: {
+      style: string;
+    };
+  };
+  spans: Span[];
+  states: States;
   ticks: Tick[];
   arrows: Arrow[];
 };
@@ -49,7 +65,9 @@ const TEMPLATES: { [key: string]: Template } = {
   lifeline: {
     regex: /^lifeline "((?:[^"\\]|\\.)*)"$/,
     fn: (d, m) => {
-      d.lifelines.add(stringSanitize(m));
+      d.lifelines[stringSanitize(m)] = {
+        style: "default",
+      };
     },
   },
   state: {
@@ -71,6 +89,23 @@ const TEMPLATES: { [key: string]: Template } = {
         lifeline: stringSanitize(m2),
         state_idx: Number(m3),
       });
+    },
+  },
+  span: {
+    regex: /^span "((?:[^"\\]|\\.)*)" T(\d+):T(\d+) "((?:[^"\\]|\\.)*)"$/,
+    fn: (d, m1, m2, m3, m4) => {
+      d.spans.push({
+        originTick: Number(m2),
+        destTick: Number(m3),
+        lifeline: stringSanitize(m1),
+        label: stringSanitize(m4),
+      });
+    },
+  },
+  style: {
+    regex: /^style "((?:[^"\\]|\\.)*)" "((?:[^"\\]|\\.)*)"$/,
+    fn: (d, m1, m2) => {
+      d.lifelines[stringSanitize(m1)].style = stringSanitize(m2);
     },
   },
   arrow: {
@@ -98,9 +133,10 @@ const TEMPLATES: { [key: string]: Template } = {
 export function parse(input: string): Diagram {
   const ret: Diagram = {
     title: "Untitled Diagram",
-    lifelines: new Set<string>(),
+    lifelines: {},
     states: {},
     ticks: [],
+    spans: [],
     arrows: [],
   };
 

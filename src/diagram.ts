@@ -1,11 +1,16 @@
-import { Arrow, Diagram } from "./parser";
+import { Arrow, Span, States, Diagram } from "./parser";
 
 export type ProcessedTick = { [key: string]: number };
 
 export type ProcessedDiagram = {
   title: string;
-  lifelines: Set<string>;
-  states: { [key: string]: string[] };
+  lifelines: {
+    [key: string]: {
+      style: string;
+    };
+  };
+  spans: Span[];
+  states: States;
   ticks: ProcessedTick[];
   arrows: Arrow[];
 };

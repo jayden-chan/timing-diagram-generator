@@ -5,6 +5,8 @@ lifeline "DNS Resolver"
 lifeline "Web Browser"
 lifeline "Web User"
 
+style "Web User" "Simple"
+
 state "Web Server" "Waiting" 0
 state "Web Server" "Processing" 1
 state "Web Server" "Sending Response" 2
@@ -20,16 +22,21 @@ state "Web User" "Idle" 0
 state "Web User" "Waiting" 1
 state "Web User" "Viewing" 2
 
+span "DNS Resolver" T4:T6 "{0..400 ms}"
+span "Web Server" T9:T13 "{200..800 ms}"
+span "Web Browser" T12:T14 "{100..500 ms}"
+
 T2:"Web User" -> T2:"Web Browser" "URL":40
 T3:"Web Browser" -> T4:"DNS Resolver" "Resolve URL":10
 T6:"DNS Resolver" => T7:"Web Browser"
 T8:"Web Browser" -> T9:"Web Server" "HTTP \"Request\"":17
-T11:"Web Server" => T12:"Web Browser"
+T11:"Web Server" => T12:"Web Browser":1
 T13:"Web Browser" => T15:"Web User"
 
 T0 "Web User" 0
 T2 "Web User" 1
 T15 "Web User" 2
+T17 "Web User" 2
 
 T0 "Web Browser" 0
 T2 "Web Browser" 1

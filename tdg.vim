@@ -11,8 +11,8 @@ syn region tdgQuotedString start=/\v"/ skip=/\v\\./ end=/\v"/
 syn match tdgNumber '[0-9]\+'
 syn match tickNumber 'T[0-9]\+' nextgroup=tdgQuotedString skipwhite
 syn match tdgArrow '->'
-syn keyword tdgBasicKeyword lifeline state nextgroup=tdgQuotedString skipwhite
-syn keyword tdgBasicKeyword state nextgroup=tdgQuotedString,tdgQuotedString skipwhite
+syn keyword tdgBasicKeyword lifeline span nextgroup=tdgQuotedString skipwhite
+syn keyword tdgBasicKeyword state style nextgroup=tdgQuotedString,tdgQuotedString skipwhite
 syn keyword tdgTitleKeyword title nextgroup=tdgQuotedString skipwhite
 syn match tdgLabelAlignL ':\zsL$'
 syn match tdgLabelAlignR ':\zsR$'

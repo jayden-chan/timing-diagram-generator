@@ -1,8 +1,8 @@
 import { ProcessedDiagram, ProcessedTick } from "./diagram";
 
 const BORDER_WIDTH = 2;
-const STATE_HEIGHT = 40;
-const STATE_WIDTH = 50;
+const TICK_HEIGHT = 40;
+const TICK_WIDTH = 50;
 const LIFELINE_BOX_MARGIN_UPPER = 50;
 const LIFELINE_BOX_MARGIN_LOWER = 20;
 const LIFELINE_BOX_MARGIN =
@@ -10,13 +10,14 @@ const LIFELINE_BOX_MARGIN =
 
 export function render(d: ProcessedDiagram): string {
   const longestStateName = Math.max(
-    ...Object.keys(d.states).map((s) => s.length)
+    ...Object.values(d.states).map((ss) => Math.max(...ss.map((s) => s.length)))
   );
   const longestLifelineName = Math.max(
     ...Object.keys(d.lifelines).map((s) => s.length)
   );
-  const lifelineBaseX = (longestLifelineName + longestStateName) * 13;
-  const width = (d.ticks.length - 1) * STATE_WIDTH + lifelineBaseX + 30;
+
+  const lifelineBaseX = (longestLifelineName + longestStateName) * 10;
+  const width = (d.ticks.length - 1) * TICK_WIDTH + lifelineBaseX + 30;
   const labelBoxHeight = 45;
   const labelBoxWidth = d.title.length * 14;
   const svg = [];
@@ -46,12 +47,12 @@ export function render(d: ProcessedDiagram): string {
 
   d.spans.forEach((s) => {
     const h =
-      heights[s.lifeline] - d.states[s.lifeline].length * STATE_HEIGHT + 5;
-    const length = (s.destTick - s.originTick) * STATE_WIDTH;
+      heights[s.lifeline] - d.states[s.lifeline].length * TICK_HEIGHT + 5;
+    const length = (s.destTick - s.originTick) * TICK_WIDTH;
     svg.push(
       generateSpan(
         length,
-        [lifelineBaseX + s.originTick * STATE_WIDTH, h],
+        [lifelineBaseX + s.originTick * TICK_WIDTH, h],
         s.label
       )
     );
@@ -125,7 +126,7 @@ function genLifelineBox(
   states: string[],
   ticks: ProcessedTick[]
 ): [string, number] {
-  const height = (numStates - 1) * STATE_HEIGHT + LIFELINE_BOX_MARGIN;
+  const height = (numStates - 1) * TICK_HEIGHT + LIFELINE_BOX_MARGIN;
   const ret = [];
   // outer box
   // point order BL->TL->TR->BR->BL
@@ -133,8 +134,8 @@ function genLifelineBox(
     polyline([
       [lifelineBaseX - 10, yCoord + height],
       [lifelineBaseX - 10, yCoord],
-      [(numTicks - 1) * STATE_WIDTH + lifelineBaseX + 10, yCoord],
-      [(numTicks - 1) * STATE_WIDTH + lifelineBaseX + 10, yCoord + height],
+      [(numTicks - 1) * TICK_WIDTH + lifelineBaseX + 10, yCoord],
+      [(numTicks - 1) * TICK_WIDTH + lifelineBaseX + 10, yCoord + height],
       [lifelineBaseX - 10, yCoord + height],
     ])
   );
@@ -144,14 +145,14 @@ function genLifelineBox(
   for (let i = 0; i < numTicks; i++) {
     ret.push(
       line(
-        [i * STATE_WIDTH + lifelineBaseX, yCoord + height - 5],
-        [i * STATE_WIDTH + lifelineBaseX, yCoord + height + 10]
+        [i * TICK_WIDTH + lifelineBaseX, yCoord + height - 5],
+        [i * TICK_WIDTH + lifelineBaseX, yCoord + height + 10]
       )
     );
   }
 
   for (let i = 0; i < numStates; i++) {
-    const y = yCoord + height - LIFELINE_BOX_MARGIN_LOWER - i * STATE_HEIGHT;
+    const y = yCoord + height - LIFELINE_BOX_MARGIN_LOWER - i * TICK_HEIGHT;
     ret.push(line([lifelineBaseX - 20, y], [lifelineBaseX, y]));
   }
 
@@ -160,7 +161,7 @@ function genLifelineBox(
       `<text text-anchor="end" class="state-label" x="${
         lifelineBaseX - 25
       }" y="${
-        yCoord + height + 5 - LIFELINE_BOX_MARGIN_LOWER - i * STATE_HEIGHT
+        yCoord + height + 5 - LIFELINE_BOX_MARGIN_LOWER - i * TICK_HEIGHT
       }">${state}</text>`
     );
   });
@@ -189,7 +190,7 @@ function drawLegends(
   for (let i = 0; i < numTicks; i++) {
     ret.push(
       `<text text-anchor="middle" x="${
-        i * STATE_WIDTH + lifelineBaseX
+        i * TICK_WIDTH + lifelineBaseX
       }" y="${yCoord}" class="legend">${i}</text>`
     );
   }
@@ -207,15 +208,15 @@ function getTimelineCoords(
     const pointsForThisTick: [number, number][] = [];
     if (i > 0 && curr[lifelineName] !== arr[i - 1][lifelineName]) {
       pointsForThisTick.push([
-        lifelineBaseX + i * STATE_WIDTH,
+        lifelineBaseX + i * TICK_WIDTH,
         yCoord -
           LIFELINE_BOX_MARGIN_LOWER -
-          arr[i - 1][lifelineName] * STATE_HEIGHT,
+          arr[i - 1][lifelineName] * TICK_HEIGHT,
       ]);
     }
     pointsForThisTick.push([
-      lifelineBaseX + i * STATE_WIDTH,
-      yCoord - LIFELINE_BOX_MARGIN_LOWER - curr[lifelineName] * STATE_HEIGHT,
+      lifelineBaseX + i * TICK_WIDTH,
+      yCoord - LIFELINE_BOX_MARGIN_LOWER - curr[lifelineName] * TICK_HEIGHT,
     ]);
     acc.push(pointsForThisTick);
     return acc;

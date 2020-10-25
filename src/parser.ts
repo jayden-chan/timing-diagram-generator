@@ -106,7 +106,7 @@ const TEMPLATES: { [key: string]: Template } = {
     regex: /^style "((?:[^"\\]|\\.)*)" (Simplified|Normal)$/,
     fn: (d, m1, m2) => {
       // @ts-ignore -- type is satisifed through the regex
-      d.lifelines[stringSanitize(m1)].style = stringSanitize(m2).toLowerCase();
+      d.lifelines[stringSanitize(m1)].style = m2.toLowerCase();
     },
   },
   arrow: {

@@ -1,7 +1,9 @@
 import { ProcessedDiagram, ProcessedTick } from "./diagram";
 import {
+  Coord,
   arrow,
   dashedArrow,
+  genSVGHeader,
   generateSpan,
   lerp,
   line,
@@ -24,7 +26,9 @@ export function render(d: ProcessedDiagram): string {
   const svg = [];
 
   const longestStateName = Math.max(
-    ...Object.values(d.states).map((ss) => Math.max(...ss.map((s) => s.length)))
+    ...Object.values(d.states)
+      .flat()
+      .map((s) => s.length)
   );
   const longestLifelineName = Math.max(
     ...Object.keys(d.lifelines).map((s) => s.length)
@@ -32,15 +36,17 @@ export function render(d: ProcessedDiagram): string {
 
   const lifelineBaseX = (longestLifelineName + longestStateName) * 11;
 
-  svg.push(text([10, 28], "title", d.title));
+  svg.push(text([10, 30], "title", d.title));
 
   const heights: { [key: string]: number } = {};
-  const lifelineConnectionPoints: { [key: string]: [number, number][][] } = {};
+  const lifelineConnectionPoints: { [key: string]: Coord[][] } = {};
   let currHeight = 70;
 
   Object.keys(d.lifelines).forEach((l) => {
     const genFn =
-      d.lifelines[l].style === "simplified" ? genNormalLifeline : genLifeline;
+      d.lifelines[l].style === "simplified"
+        ? genNormalLifeline
+        : genSimpleLifeline;
     const [boxSvg, height] = genFn({
       lifelineBaseX: lifelineBaseX,
       yCoord: currHeight,
@@ -118,7 +124,7 @@ function getArrowAttachmentPoints(input: {
   lifelineBaseX: number;
   yCoord: number;
   style: "simplified" | "normal";
-}): [number, number][][] {
+}): Coord[][] {
   return input.style === "normal"
     ? genTimelineCoordsNormal(input)
     : getSimpleTimelineAttachmentPoints(input);
@@ -218,7 +224,7 @@ function genNormalLifeline(input: {
   return [ret.join(""), height];
 }
 
-function genLifeline(input: {
+function genSimpleLifeline(input: {
   lifelineBaseX: number;
   yCoord: number;
   lifelineName: string;
@@ -259,7 +265,7 @@ function genLifeline(input: {
   return [ret.join(""), height];
 }
 
-function genSideTick([x, y]: [number, number], label: string): string {
+function genSideTick([x, y]: Coord, label: string): string {
   const ret = [];
   ret.push(line([x - 20, y], [x - 5, y]));
   ret.push(text([x - 25, y + 5], "simple", label, "end"));
@@ -291,10 +297,10 @@ function genTimelineCoordsNormal(input: {
   lifelineName: string;
   lifelineBaseX: number;
   yCoord: number;
-}): [number, number][][] {
+}): Coord[][] {
   const { ticks, lifelineName, lifelineBaseX, yCoord } = input;
   return ticks.reduce((acc, curr, i, arr) => {
-    const pointsForThisTick: [number, number][] = [];
+    const pointsForThisTick: Coord[] = [];
     if (i > 0 && curr[lifelineName] !== arr[i - 1][lifelineName]) {
       pointsForThisTick.push([
         lifelineBaseX + i * TICK_WIDTH,
@@ -309,35 +315,7 @@ function genTimelineCoordsNormal(input: {
     ]);
     acc.push(pointsForThisTick);
     return acc;
-  }, [] as [number, number][][]);
-}
-
-function getSimpleTimelineAttachmentPoints(input: {
-  ticks: ProcessedTick[];
-  lifelineName: string;
-  lifelineBaseX: number;
-  yCoord: number;
-}): [number, number][][] {
-  const { ticks, lifelineName, lifelineBaseX, yCoord } = input;
-  const yCenter = yCoord - LIFELINE_BOX_MARGIN_LOWER - TICK_HEIGHT;
-  return ticks.reduce((acc, curr, i, arr) => {
-    const pointsForThisTick: [number, number][] = [];
-    if (i !== 0 && curr[lifelineName] !== arr[i - 1][lifelineName]) {
-      pointsForThisTick.push([lifelineBaseX + i * TICK_WIDTH, yCenter]);
-    } else {
-      pointsForThisTick.push([
-        lifelineBaseX + i * TICK_WIDTH,
-        yCenter + TICK_HEIGHT / 2,
-      ]);
-      pointsForThisTick.push([
-        lifelineBaseX + i * TICK_WIDTH,
-        yCenter - TICK_HEIGHT / 2,
-      ]);
-    }
-
-    acc.push(pointsForThisTick);
-    return acc;
-  }, [] as [number, number][][]);
+  }, [] as Coord[][]);
 }
 
 function genTimelineCoordsSimple(input: {
@@ -346,14 +324,14 @@ function genTimelineCoordsSimple(input: {
   lifelineBaseX: number;
   yCoord: number;
   side: "top" | "bottom";
-}): [number, number][][] {
+}): Coord[][] {
   const { ticks, lifelineName, lifelineBaseX, yCoord, side } = input;
   const yMultiplier = side === "top" ? 1.5 : 0.5;
   const yCenter = yCoord - LIFELINE_BOX_MARGIN_LOWER - TICK_HEIGHT;
   const yNorm = yCoord - LIFELINE_BOX_MARGIN_LOWER - TICK_HEIGHT * yMultiplier;
   return ticks.reduce(
     (acc, curr, i, arr) => {
-      const pointsForThisTick: [number, number][] = [];
+      const pointsForThisTick: Coord[] = [];
       if (i !== 0 && curr[lifelineName] !== arr[i - 1][lifelineName]) {
         pointsForThisTick.push([
           lifelineBaseX + i * TICK_WIDTH - TICK_WIDTH / 3,
@@ -376,46 +354,30 @@ function genTimelineCoordsSimple(input: {
   );
 }
 
-function genSVGHeader(
-  [width, height]: [number, number],
-  [labelWidth, labelHeight]: [number, number]
-): string {
-  const borderWidth = 2;
-  const labelBoxEdgeSize = 20;
-  return `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-<style>
-  .title { font: bold 20px sans-serif }
-  .lifeline-label { font: bold 17px sans-serif }
-  .simple { font-family: sans-serif }
-  text { white-space: pre }
-</style>
-<defs>
-  <marker id="arrow" viewBox="0 0 20 20" refX="20" refY="10"
-      markerWidth="12" markerHeight="12"
-      orient="auto-start-reverse">
-    <path d="M 0 0 L 20 10 L 0 20 z" />
-  </marker>
-</defs>
-${polyline(
-  // @ts-ignore
-  [
-    [width, 0],
-    [width, height],
-    [0, height],
-    [0, 0],
-    [width, 0],
-  ].map((ee) => ee.map((e) => (e === 0 ? borderWidth : e - borderWidth))),
-  borderWidth
-)}
-${polyline(
-  [
-    [0, labelHeight],
-    [labelWidth - labelBoxEdgeSize, labelHeight],
-    [labelWidth, labelHeight - labelBoxEdgeSize],
-    [labelWidth, 0],
-  ],
-  borderWidth
-)}
-`;
+function getSimpleTimelineAttachmentPoints(input: {
+  ticks: ProcessedTick[];
+  lifelineName: string;
+  lifelineBaseX: number;
+  yCoord: number;
+}): Coord[][] {
+  const { ticks, lifelineName, lifelineBaseX, yCoord } = input;
+  const yCenter = yCoord - LIFELINE_BOX_MARGIN_LOWER - TICK_HEIGHT;
+  return ticks.reduce((acc, curr, i, arr) => {
+    const pointsForThisTick: Coord[] = [];
+    if (i !== 0 && curr[lifelineName] !== arr[i - 1][lifelineName]) {
+      pointsForThisTick.push([lifelineBaseX + i * TICK_WIDTH, yCenter]);
+    } else {
+      pointsForThisTick.push([
+        lifelineBaseX + i * TICK_WIDTH,
+        yCenter + TICK_HEIGHT / 2,
+      ]);
+      pointsForThisTick.push([
+        lifelineBaseX + i * TICK_WIDTH,
+        yCenter - TICK_HEIGHT / 2,
+      ]);
+    }
+
+    acc.push(pointsForThisTick);
+    return acc;
+  }, [] as Coord[][]);
 }

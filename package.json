@@ -16,6 +16,7 @@
   "scripts": {
     "build": "tsc",
     "test": "echo No tests",
+    "gen": "node --enable-source-maps ./dist/index.js examples/2-website.tdg > test.svg",
     "dev": "tsc -w",
     "start": "node dist/index.js"
   },

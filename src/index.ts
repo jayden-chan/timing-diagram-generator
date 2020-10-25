@@ -1,7 +1,7 @@
 import { promisify } from "util";
 import { readFile } from "fs";
 import { parse } from "./parser";
-import { infillTicks } from "./diagram";
+import { interpolateTicks } from "./diagram";
 import { render } from "./svg";
 
 async function main(): Promise<number> {
@@ -15,12 +15,12 @@ async function main(): Promise<number> {
     file = await promisify(readFile)(process.argv[2], { encoding: "utf8" });
   } catch (e) {
     console.error(`ERROR: Failed to read input file: ${e.message}`);
-    return -1;
+    return 1;
   }
   const d = parse(file);
   process.argv.includes("--debug") && console.error(d);
 
-  const processed = infillTicks(d);
+  const processed = { ...d, ticks: interpolateTicks(d) };
   process.argv.includes("--debug") && console.error(processed);
 
   const svg = render(processed);

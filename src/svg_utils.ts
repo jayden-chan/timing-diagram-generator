@@ -23,6 +23,13 @@ export function dashedArrow(
   return `<polyline points="${from[0]},${from[1]} ${to[0]},${to[1]}" fill="none" stroke="black" stroke-dasharray="10" marker-end="url(#arrow)" />`;
 }
 
+function doubleSidedArrow(
+  from: [number, number],
+  to: [number, number]
+): string {
+  return `<polyline points="${from[0]},${from[1]} ${to[0]},${to[1]}" fill="none" stroke="black" marker-start="url(#arrow)" marker-end="url(#arrow)" />`;
+}
+
 export function text(
   [x, y]: [number, number],
   className: string,
@@ -74,11 +81,4 @@ export function lerp(
     x1 + absXDiff * Math.sign(x2 - x1) * percent,
     y1 + absYDiff * Math.sign(y2 - y1) * percent,
   ];
-}
-
-function doubleSidedArrow(
-  from: [number, number],
-  to: [number, number]
-): string {
-  return `<polyline points="${from[0]},${from[1]} ${to[0]},${to[1]}" fill="none" stroke="black" marker-start="url(#arrow)" marker-end="url(#arrow)" />`;
 }

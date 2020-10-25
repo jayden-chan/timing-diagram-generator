@@ -15,9 +15,7 @@ export type ProcessedDiagram = {
   arrows: Arrow[];
 };
 
-export function infillTicks(d: Diagram): ProcessedDiagram {
-  const ret: ProcessedDiagram = { ...d, ticks: [] };
-
+export function interpolateTicks(d: Diagram): ProcessedTick[] {
   const tMax = d.ticks.reduce((acc, curr) => {
     if (curr.time > acc) {
       return curr.time;
@@ -53,6 +51,5 @@ export function infillTicks(d: Diagram): ProcessedDiagram {
     newTicks.push(newTick);
   }
 
-  ret.ticks = newTicks;
-  return ret;
+  return newTicks;
 }

@@ -8,10 +8,10 @@ tdg my_diagram.tdg > output.svg
 ```
 
 ## Examples
-### Simple ([source](/examples/1-simple.tdg))
-![Simple](./examples/1-simple.svg)
 ### Website Example ([source](/examples/2-website.tdg))
 ![Simple](./examples/2-website.svg)
+### Simple ([source](/examples/1-simple.tdg))
+![Simple](./examples/1-simple.svg)
 
 ## Full Usage
 
@@ -83,7 +83,7 @@ T<start index>:"<start lifeline>" -> T<end index>:"<end lifeline>" "<label>":<la
 # Label on left/right side
 T<start index>:"<start lifeline>" -> T<end index>:"<end lifeline>" "<label>":<label %>:L/R
 
-# Arrow connecting to the upper part of the timline
+# Arrow connecting to the upper part of the timeline
 T<start index>:"<start lifeline>" -> T<end index>:"<end lifeline>":<connection point>
 ```
 Examples
@@ -100,7 +100,7 @@ T2:"Web User" -> T2:"Web Browser" "URL":40
 # With label at 38% of the arrow length on the left side
 T3:"Web Browser" -> T4:"DNS Resolver" "Resolve URL":38:L
 
-# Arrow connecting to the upper part of the timline at T12
+# Arrow connecting to the upper part of the timeline at T12
 T11:"Web Server" => T12:"Web Browser":1 "HTTP Response":45
 ```
 

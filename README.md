@@ -71,16 +71,16 @@ span "My Lifeline" T0:T7 "{0...400 ms}"
 ### Arrow
 Syntax
 ```
-# Simple Arrow
+# Simple
 T<start index>:"<start lifeline>" -> T<end index>:"<end lifeline>"
 
-# Dashed line arrow
+# Dashed line
 T<start index>:"<start lifeline>" => T<end index>:"<end lifeline>"
 
-# With label "URL" at 40% of the arrow length
+# With label at % of arrow length
 T<start index>:"<start lifeline>" -> T<end index>:"<end lifeline>" "<label>":<label %>
 
-# With label at 38% of the arrow length on the left side
+# Label on left/right side
 T<start index>:"<start lifeline>" -> T<end index>:"<end lifeline>" "<label>":<label %>:L/R
 
 # Arrow connecting to the upper part of the timline

@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "Generate timing diagrams",
   "main": "dist/index.js",
-  "bin": "dist/index.js",
+  "bin": {
+    "tdg": "dist/index.js"
+  },
   "files": [
     "dist/diagram.js",
     "dist/index.js",

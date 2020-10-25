@@ -5,7 +5,7 @@ lifeline "DNS Resolver"
 lifeline "Web Browser"
 lifeline "Web User"
 
-style "Web User" "Simple"
+style "Web User" Simplified
 
 state "Web Server" "Waiting" 0
 state "Web Server" "Processing" 1

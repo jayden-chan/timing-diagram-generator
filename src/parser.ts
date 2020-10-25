@@ -32,7 +32,7 @@ export type Diagram = {
   title: string;
   lifelines: {
     [key: string]: {
-      style: string;
+      style: "simplified" | "normal";
     };
   };
   spans: Span[];
@@ -66,7 +66,7 @@ const TEMPLATES: { [key: string]: Template } = {
     regex: /^lifeline "((?:[^"\\]|\\.)*)"$/,
     fn: (d, m) => {
       d.lifelines[stringSanitize(m)] = {
-        style: "default",
+        style: "normal",
       };
     },
   },
@@ -103,8 +103,9 @@ const TEMPLATES: { [key: string]: Template } = {
     },
   },
   style: {
-    regex: /^style "((?:[^"\\]|\\.)*)" "((?:[^"\\]|\\.)*)"$/,
+    regex: /^style "((?:[^"\\]|\\.)*)" (Simplified|Normal)$/,
     fn: (d, m1, m2) => {
+      // @ts-ignore -- type is satisifed through the regex
       d.lifelines[stringSanitize(m1)].style = stringSanitize(m2).toLowerCase();
     },
   },

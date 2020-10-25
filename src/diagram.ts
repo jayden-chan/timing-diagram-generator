@@ -6,7 +6,7 @@ export type ProcessedDiagram = {
   title: string;
   lifelines: {
     [key: string]: {
-      style: string;
+      style: "simplified" | "normal";
     };
   };
   spans: Span[];

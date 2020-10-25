@@ -121,8 +121,8 @@ Find your vim runtime path:
 :echo &runtimepath
 ```
 The path will be the first one in the list of paths returned. To install the `.tdg`
-syntax file simply place `tdg.vim` in your runtime path and add the following to your
-vimrc:
+syntax file simply place `tdg.vim` in your runtime path under the `/syntax` folder and
+add the following to your vimrc:
 ```vimscript
 au BufRead,BufNewFile *.tdg set filetype=tdg
 ```

@@ -398,11 +398,14 @@ function genSVGHeader(
   </marker>
 </defs>
 ${polyline(
+  // @ts-ignore
   [
-    [width - borderWidth, 0],
-    [width - borderWidth, height - borderWidth],
-    [0, height - borderWidth],
-  ],
+    [width, 0],
+    [width, height],
+    [0, height],
+    [0, 0],
+    [width, 0],
+  ].map((ee) => ee.map((e) => (e === 0 ? borderWidth : e - borderWidth))),
   borderWidth
 )}
 ${polyline(

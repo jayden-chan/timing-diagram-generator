@@ -10,7 +10,13 @@ async function main(): Promise<number> {
     return 1;
   }
 
-  const file = await promisify(readFile)(process.argv[2], { encoding: "utf8" });
+  let file;
+  try {
+    file = await promisify(readFile)(process.argv[2], { encoding: "utf8" });
+  } catch (e) {
+    console.error(`ERROR: Failed to read input file: ${e.message}`);
+    return -1;
+  }
   const d = parse(file);
   process.argv.includes("--debug") && console.error(d);
 

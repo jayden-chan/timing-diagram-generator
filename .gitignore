@@ -3,3 +3,4 @@ node_modules
 *.swp
 *.env
 test.svg
+test*.tdg

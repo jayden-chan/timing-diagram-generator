@@ -7,11 +7,19 @@ npm i -g timing-diagram-generator
 tdg my_diagram.tdg > output.svg
 ```
 
+### Installing the Vim syntax
+With vim-plug:
+```
+Plug 'jayden-chan/timing-diagram-generator', { 'branch': 'vim-plugin' }
+```
+
 ## Examples
-### Website Example ([source](/examples/2-website.tdg))
+### Website Example ([source](./examples/2-website.tdg))
 ![Simple](./examples/2-website.svg)
-### Simple ([source](/examples/1-simple.tdg))
+### Simple ([source](./examples/1-simple.tdg))
 ![Simple](./examples/1-simple.svg)
+### Task Scheduler ([source](./examples/3-scheduler.tdg))
+![Simple](./examples/3-scheduler.svg)
 
 ## Full Usage
 
@@ -125,15 +133,13 @@ T11:"Web Server" => T12:"Web Browser":1 "HTTP Response":45
 Syntax
 ```
 style "<lifeline>" Normal|Simplified
+style "<lifeline>" color
 ```
 Example
 ```
 style "My Lifeline" Normal
 style "My Lifeline" Simplified
-```
 
-## Installing the Vim syntax
-With vim-plug:
-```
-Plug 'jayden-chan/timing-diagram-generator', { 'branch': 'vim-plugin' }
+# enable color coding for the states in the lifeline
+style "<lifeline>" color
 ```

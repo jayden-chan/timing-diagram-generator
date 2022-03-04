@@ -1,0 +1,56 @@
+title "Schedule over a period of 300 ms"
+
+config TICK_WIDTH 4
+config LEGEND_MODE significant
+
+lifeline "Without Task C"
+
+state "Without Task C" "Idle" 0
+state "Without Task C" "Task A" 1
+state "Without Task C" "Task B" 2
+
+style "Without Task C" color
+
+# Timing definitions
+T0   "Without Task C" "Task A"
+T40  "Without Task C" "Task B"
+T70  "Without Task C" "Idle"
+T100 "Without Task C" "Task A"
+T140 "Without Task C" "Idle"
+T150 "Without Task C" "Task B"
+T180 "Without Task C" "Idle"
+T200 "Without Task C" "Task A"
+T240 "Without Task C" "Idle"
+T300 "Without Task C" "Idle"
+
+lifeline "With Task C"
+
+state "With Task C" "Idle" 0
+state "With Task C" "Task A" 1
+state "With Task C" "Task B" 2
+state "With Task C" "Task C" 3
+
+style "With Task C" color
+
+# A period 100 ms time 40ms
+# B period 150 ms time 30ms
+# C period 50 ms time 20ms
+
+# Timing definitions
+T0   "With Task C" "Task C" # A40 B30 C20
+T20  "With Task C" "Task A" # A40 B30
+T50  "With Task C" "Task C" # A10 B30 C20
+T70  "With Task C" "Task A" # A10 B30
+T80  "With Task C" "Task B" # B30
+T100 "With Task C" "Task C" # B10 A40 C20
+T120 "With Task C" "Task B" # B10 A40
+T130 "With Task C" "Task A" # A40
+T150 "With Task C" "Task C" # A20 C20 B30
+T170 "With Task C" "Task A" # A20 B30
+T190 "With Task C" "Task B" # B30
+T200 "With Task C" "Task C" # B20 A40 C20
+T220 "With Task C" "Task B" # B20 A40
+T240 "With Task C" "Task A" # A40
+T250 "With Task C" "Task C" # A30 C20
+T270 "With Task C" "Task A" # A30
+T300 "With Task C" "Task C" # A40 B30 C20 -- repeat

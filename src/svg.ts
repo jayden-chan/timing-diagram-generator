@@ -24,16 +24,16 @@ const LIFELINE_BOX_MARGIN =
   LIFELINE_BOX_MARGIN_UPPER + LIFELINE_BOX_MARGIN_LOWER;
 
 const COLORS = [
-  "#EDF2F7",
-  "#C6F6D5",
-  "#FEFCBF",
-  "#FED7D7",
-  "#B2F5EA",
-  "#E9D8FD",
-  "#FEEBC8",
+  "#edf2f7",
+  "#c6f6d5",
+  "#fefcbf",
+  "#fed7d7",
+  "#b2f5ea",
+  "#e9d8fd",
+  "#feebc8",
   "#bee3f8",
-  "#FED7E2",
-  "#C4F1F9",
+  "#fed7e2",
+  "#c4f1f9",
 ];
 
 export function render(d: ProcessedDiagram): string {

@@ -141,5 +141,6 @@ style "My Lifeline" Normal
 style "My Lifeline" Simplified
 
 # enable color coding for the states in the lifeline
-style "<lifeline>" color
+# (only available with the "Normal" styling option)
+style "My Lifeline" color
 ```

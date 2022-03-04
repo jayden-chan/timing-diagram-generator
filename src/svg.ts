@@ -11,6 +11,7 @@ import {
   polyline,
   rect,
   text,
+  polygon,
 } from "./svg_utils";
 
 const TIMELINE_STROKE_WIDTH = 2;
@@ -21,6 +22,19 @@ const LIFELINE_BOX_MARGIN_LOWER = 20;
 const LIFELINE_BOX_MARGIN_SIMPLE = LIFELINE_BOX_MARGIN_LOWER + 70;
 const LIFELINE_BOX_MARGIN =
   LIFELINE_BOX_MARGIN_UPPER + LIFELINE_BOX_MARGIN_LOWER;
+
+const COLORS = [
+  "#EDF2F7",
+  "#C6F6D5",
+  "#FEFCBF",
+  "#FED7D7",
+  "#B2F5EA",
+  "#E9D8FD",
+  "#FEEBC8",
+  "#bee3f8",
+  "#FED7E2",
+  "#C4F1F9",
+];
 
 export function render(d: ProcessedDiagram): string {
   const svg = [];
@@ -46,11 +60,12 @@ export function render(d: ProcessedDiagram): string {
   Object.keys(d.lifelines).forEach((l) => {
     const genFn =
       d.lifelines[l].style === "simplified"
-        ? genNormalLifeline
-        : genSimpleLifeline;
+        ? genSimpleLifeline
+        : genNormalLifeline;
 
     const [boxSvg, height] = genFn({
       config: d.config,
+      color: d.lifelines[l].color,
       lifelineBaseX: lifelineBaseX,
       yCoord: currHeight,
       lifelineName: l,
@@ -160,7 +175,7 @@ function genLifelineBox(input: {
   return ret.join("");
 }
 
-function genNormalLifeline(input: {
+function genSimpleLifeline(input: {
   config: DiagramConfig;
   lifelineBaseX: number;
   yCoord: number;
@@ -227,15 +242,17 @@ function genNormalLifeline(input: {
   return [ret.join(""), height];
 }
 
-function genSimpleLifeline(input: {
+function genNormalLifeline(input: {
   config: DiagramConfig;
+  color: boolean;
   lifelineBaseX: number;
   yCoord: number;
   lifelineName: string;
   states: string[];
   ticks: ProcessedTick[];
 }): [string, number] {
-  const { config, lifelineBaseX, yCoord, lifelineName, states, ticks } = input;
+  const { config, color, lifelineBaseX, yCoord, lifelineName, states, ticks } =
+    input;
   const height = (states.length - 1) * TICK_HEIGHT + LIFELINE_BOX_MARGIN;
   const ret = [];
   ret.push(
@@ -254,6 +271,19 @@ function genSimpleLifeline(input: {
     ret.push(genSideTick([lifelineBaseX, y], state));
   });
 
+  // Shading
+  if (color) {
+    ret.push(
+      genLifelineShading({
+        config,
+        ticks,
+        lifelineName,
+        lifelineBaseX,
+        yCoord: yCoord + height,
+      })
+    );
+  }
+
   // Timeline
   ret.push(
     polyline(
@@ -269,6 +299,43 @@ function genSimpleLifeline(input: {
   );
 
   return [ret.join(""), height];
+}
+
+function genLifelineShading(input: {
+  config: DiagramConfig;
+  ticks: ProcessedTick[];
+  lifelineName: string;
+  lifelineBaseX: number;
+  yCoord: number;
+}): string {
+  const { config, lifelineName, lifelineBaseX, yCoord } = input;
+  const ticks = input.ticks.map((t) => t[lifelineName]);
+  const ret: string[] = [];
+  const bottomY = yCoord - LIFELINE_BOX_MARGIN_LOWER;
+
+  let state = ticks[0].state_idx;
+  let prevX = lifelineBaseX;
+
+  ticks.forEach((tick, i) => {
+    if (tick.significant && tick.state_idx !== state) {
+      const topY = yCoord - LIFELINE_BOX_MARGIN_LOWER - state * TICK_HEIGHT;
+      const topLeft: Coord = [prevX, topY];
+      const topRight: Coord = [lifelineBaseX + i * config.tickWidth, topY];
+      const bottomLeft: Coord = [prevX, bottomY];
+      const bottomRight: Coord = [
+        lifelineBaseX + i * config.tickWidth,
+        bottomY,
+      ];
+
+      ret.push(
+        polygon([topLeft, topRight, bottomRight, bottomLeft], COLORS[state])
+      );
+      state = tick.state_idx;
+      prevX = lifelineBaseX + i * config.tickWidth;
+    }
+  });
+
+  return ret.join("");
 }
 
 function genSideTick([x, y]: Coord, label: string): string {

@@ -21,6 +21,7 @@ export function genSVGHeader(
     <path d="M 0 0 L 20 10 L 0 20 z" />
   </marker>
 </defs>
+<rect width="${width}" height="${height}" fill="white" />
 ${polyline(
   // @ts-ignore
   [
@@ -89,6 +90,12 @@ export function polyline(points: Coord[], strokeWidth?: number): string {
     .join(" ")}" fill="none" stroke="black" style="stroke-width:${
     strokeWidth ?? 1
   }px"/>`;
+}
+
+export function polygon(points: Coord[], fill: string): string {
+  return `<polygon points="${points
+    .map((p) => `${p[0]},${p[1]}`)
+    .join(" ")}" fill="${fill}" stroke="none" />`;
 }
 
 export function line([x1, y1]: Coord, [x2, y2]: Coord): string {

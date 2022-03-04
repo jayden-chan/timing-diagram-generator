@@ -39,6 +39,7 @@ export type Diagram = {
     string,
     {
       style: "simplified" | "normal";
+      color: boolean;
     }
   >;
   spans: Span[];
@@ -108,7 +109,21 @@ const TEMPLATES: Record<string, Template> = {
     fn: (d, m) => {
       d.lifelines[stringSanitize(m)] = {
         style: "normal",
+        color: false,
       };
+    },
+  },
+  style: {
+    regex: /^style\s+"((?:[^"\\]|\\.)*)"\s+(Simplified|Normal)(?:\s*#.*)?$/,
+    fn: (d, m1, m2) => {
+      // @ts-ignore -- type is satisifed through the regex
+      d.lifelines[stringSanitize(m1)].style = m2.toLowerCase();
+    },
+  },
+  color: {
+    regex: /^style\s+"((?:[^"\\]|\\.)*)"\s+(?:color)(?:\s*#.*)?$/,
+    fn: (d, m1) => {
+      d.lifelines[stringSanitize(m1)].color = true;
     },
   },
   state: {
@@ -150,13 +165,6 @@ const TEMPLATES: Record<string, Template> = {
         lifeline: stringSanitize(m1),
         label: stringSanitize(m4),
       });
-    },
-  },
-  style: {
-    regex: /^style\s+"((?:[^"\\]|\\.)*)"\s+(Simplified|Normal)(?:\s*#.*)?$/,
-    fn: (d, m1, m2) => {
-      // @ts-ignore -- type is satisifed through the regex
-      d.lifelines[stringSanitize(m1)].style = m2.toLowerCase();
     },
   },
   arrow: {

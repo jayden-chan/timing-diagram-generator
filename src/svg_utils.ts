@@ -30,9 +30,7 @@ ${polyline(
     [0, height],
     [0, 0],
     [width, 0],
-  ].map((ee) =>
-    ee.map((e) => (e === 0 ? borderWidth / 2 : e - borderWidth / 2))
-  ),
+  ].map((ee) => ee.map((e) => (e === 0 ? borderWidth : e - borderWidth))),
   borderWidth
 )}
 ${polyline(

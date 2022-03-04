@@ -184,7 +184,7 @@ function genSimpleLifeline(input: {
   ticks: ProcessedTick[];
 }): [string, number] {
   const { config, lifelineBaseX, yCoord, lifelineName, states, ticks } = input;
-  const height = config.tickWidth + LIFELINE_BOX_MARGIN_SIMPLE;
+  const height = TICK_HEIGHT + LIFELINE_BOX_MARGIN_SIMPLE;
   const ret = [];
   ret.push(
     genLifelineBox({
@@ -197,13 +197,16 @@ function genSimpleLifeline(input: {
     })
   );
 
-  const y = yCoord + height - LIFELINE_BOX_MARGIN_LOWER - config.tickWidth;
+  const y = yCoord + height - LIFELINE_BOX_MARGIN_LOWER - TICK_HEIGHT;
   ret.push(genSideTick([lifelineBaseX, y], "State"));
 
   let prevX = lifelineBaseX;
   ticks.forEach((t, i) => {
     const x = lifelineBaseX + i * config.tickWidth;
-    if (i !== 0 && t[lifelineName] !== ticks[i - 1][lifelineName]) {
+    if (
+      i !== 0 &&
+      t[lifelineName].state_idx !== ticks[i - 1][lifelineName].state_idx
+    ) {
       ret.push(
         text(
           [prevX + (x - prevX) / 2, y + 5],
@@ -389,7 +392,10 @@ function genTimelineCoordsNormal(input: {
   const { config, ticks, lifelineName, lifelineBaseX, yCoord } = input;
   return ticks.reduce((acc, curr, i, arr) => {
     const pointsForThisTick: Coord[] = [];
-    if (i > 0 && curr[lifelineName] !== arr[i - 1][lifelineName]) {
+    if (
+      i > 0 &&
+      curr[lifelineName].state_idx !== arr[i - 1][lifelineName].state_idx
+    ) {
       pointsForThisTick.push([
         lifelineBaseX + i * config.tickWidth,
         yCoord -
@@ -423,7 +429,10 @@ function genTimelineCoordsSimple(input: {
   return ticks.reduce(
     (acc, curr, i, arr) => {
       const pointsForThisTick: Coord[] = [];
-      if (i !== 0 && curr[lifelineName] !== arr[i - 1][lifelineName]) {
+      if (
+        i !== 0 &&
+        curr[lifelineName].state_idx !== arr[i - 1][lifelineName].state_idx
+      ) {
         pointsForThisTick.push([
           lifelineBaseX + i * config.tickWidth - config.tickWidth / 3,
           yNorm,
@@ -456,7 +465,10 @@ function getSimpleTimelineAttachmentPoints(input: {
   const yCenter = yCoord - LIFELINE_BOX_MARGIN_LOWER - TICK_HEIGHT;
   return ticks.reduce((acc, curr, i, arr) => {
     const pointsForThisTick: Coord[] = [];
-    if (i !== 0 && curr[lifelineName] !== arr[i - 1][lifelineName]) {
+    if (
+      i !== 0 &&
+      curr[lifelineName].state_idx !== arr[i - 1][lifelineName].state_idx
+    ) {
       pointsForThisTick.push([lifelineBaseX + i * config.tickWidth, yCenter]);
     } else {
       pointsForThisTick.push([

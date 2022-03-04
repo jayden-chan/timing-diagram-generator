@@ -15,6 +15,23 @@ tdg my_diagram.tdg > output.svg
 
 ## Full Usage
 
+### Config
+Syntax
+```
+config VARIABLE_NAME value
+```
+Example
+```
+config TICK_WIDTH 50
+config LEGEND_FREQUENCY 5
+
+# label the axis every `LEGEND_FREQUENCY` ticks
+config LEGEND_MODE freq
+
+# label the axis on each state change
+config LEGEND_MODE significant
+```
+
 ### Title
 Syntax
 ```
@@ -116,13 +133,7 @@ style "My Lifeline" Simplified
 ```
 
 ## Installing the Vim syntax
-Find your vim runtime path:
+With vim-plug:
 ```
-:echo &runtimepath
-```
-The path will be the first one in the list of paths returned. To install the `.tdg`
-syntax file simply place `tdg.vim` in your runtime path under the `/syntax` folder and
-add the following to your vimrc:
-```vimscript
-au BufRead,BufNewFile *.tdg set filetype=tdg
+Plug 'jayden-chan/timing-diagram-generator', { 'branch': 'vim-plugin' }
 ```

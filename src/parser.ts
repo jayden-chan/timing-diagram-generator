@@ -17,9 +17,7 @@ export type Arrow = {
   style: "solid" | "dashed";
 };
 
-export type States = {
-  [key: string]: string[];
-};
+export type States = Record<string, string[]>;
 
 export type Span = {
   originTick: number;
@@ -28,13 +26,21 @@ export type Span = {
   label: string;
 };
 
+export type DiagramConfig = {
+  tickWidth: number;
+  tickFreq: number;
+  legendMode: "freq" | "significant";
+};
+
 export type Diagram = {
   title: string;
-  lifelines: {
-    [key: string]: {
+  config: DiagramConfig;
+  lifelines: Record<
+    string,
+    {
       style: "simplified" | "normal";
-    };
-  };
+    }
+  >;
   spans: Span[];
   states: States;
   ticks: Tick[];
@@ -55,15 +61,50 @@ function stringSanitize(s: string): string {
     .replace(/</g, "&lt;");
 }
 
-const TEMPLATES: { [key: string]: Template } = {
+const META_CONFIG: Record<
+  string,
+  {
+    key: keyof DiagramConfig;
+    parseFn: (val: string) => number | string;
+  }
+> = {
+  TICK_WIDTH: { key: "tickWidth", parseFn: (val) => Number(val) },
+  LEGEND_FREQUENCY: { key: "tickFreq", parseFn: (val) => Number(val) },
+  LEGEND_MODE: {
+    key: "legendMode",
+    parseFn: (val) => {
+      if (val === "freq" || val === "significant") {
+        return val;
+      } else {
+        throw new Error(`Invalid value for config LEGEND_MODE: ${val}`);
+      }
+    },
+  },
+};
+
+const TEMPLATES: Record<string, Template> = {
+  config: {
+    regex: /^config\s+([A-Z_]+)\s+(.*?)(?:\s*#.*)?$/,
+    fn: (d, key, val) => {
+      if (Object.keys(META_CONFIG).includes(key)) {
+        if (val !== "default") {
+          const metaConfig = META_CONFIG[key];
+          // @ts-ignore -- type is satisifed through META_CONFIG
+          d.config[metaConfig.key] = metaConfig.parseFn(val);
+        }
+      } else {
+        throw new Error(`Invalid config key "${key}" found`);
+      }
+    },
+  },
   title: {
-    regex: /^title "((?:[^"\\]|\\.)*)"$/,
+    regex: /^title\s+"((?:[^"\\]|\\.)*)"(?:\s*#.*)?$/,
     fn: (d, m) => {
       d.title = stringSanitize(m);
     },
   },
   lifeline: {
-    regex: /^lifeline "((?:[^"\\]|\\.)*)"$/,
+    regex: /^lifeline\s+"((?:[^"\\]|\\.)*)"(?:\s*#.*)?$/,
     fn: (d, m) => {
       d.lifelines[stringSanitize(m)] = {
         style: "normal",
@@ -71,7 +112,8 @@ const TEMPLATES: { [key: string]: Template } = {
     },
   },
   state: {
-    regex: /^state "((?:[^"\\]|\\.)*)" "((?:[^"\\]|\\.)*)" (\d+)$/,
+    regex:
+      /^state\s+"((?:[^"\\]|\\.)*)"\s+"((?:[^"\\]|\\.)*)"\s+(\d+)(?:\s*#.*)?$/,
     fn: (d, m1, m2, m3) => {
       const lifelineName = stringSanitize(m1);
       const stateName = stringSanitize(m2);
@@ -82,17 +124,25 @@ const TEMPLATES: { [key: string]: Template } = {
     },
   },
   tick: {
-    regex: /^T(\d+) "((?:[^"\\]|\\.)*)" (\d+)$/,
-    fn: (d, m1, m2, m3) => {
-      d.ticks.push({
-        time: Number(m1),
-        lifeline: stringSanitize(m2),
-        state_idx: Number(m3),
-      });
+    regex:
+      /^T(\d+)\s+"((?:[^"\\]|\\.)*)"\s+(?:(\d+)|"((?:[^"\\]|\\.)*)")(?:\s*#.*)?$/,
+    fn: (d, ...m) => {
+      const [m1, m2, m3] = m.filter((match) => match !== undefined);
+      const lifeline = stringSanitize(m2);
+      const state_idx = /\d+/.test(m3)
+        ? Number(m3)
+        : d.states[lifeline].indexOf(m3);
+
+      if (state_idx < 0) {
+        throw new Error(`Invalid state index "${state_idx}" detected`);
+      }
+
+      d.ticks.push({ time: Number(m1), lifeline, state_idx });
     },
   },
   span: {
-    regex: /^span "((?:[^"\\]|\\.)*)" T(\d+):T(\d+) "((?:[^"\\]|\\.)*)"$/,
+    regex:
+      /^span\s+"((?:[^"\\]|\\.)*)"\s+T(\d+):T(\d+)\s+"((?:[^"\\]|\\.)*)"(?:\s*#.*)?$/,
     fn: (d, m1, m2, m3, m4) => {
       d.spans.push({
         originTick: Number(m2),
@@ -103,14 +153,15 @@ const TEMPLATES: { [key: string]: Template } = {
     },
   },
   style: {
-    regex: /^style "((?:[^"\\]|\\.)*)" (Simplified|Normal)$/,
+    regex: /^style\s+"((?:[^"\\]|\\.)*)"\s+(Simplified|Normal)(?:\s*#.*)?$/,
     fn: (d, m1, m2) => {
       // @ts-ignore -- type is satisifed through the regex
       d.lifelines[stringSanitize(m1)].style = m2.toLowerCase();
     },
   },
   arrow: {
-    regex: /^T(\d+):"((?:[^"\\]|\\.)*)"(?::(\d))? (->|=>) T(\d+):"((?:[^"\\]|\\.)*)"(?::(\d))?(?: "((?:[^"\\]|\\.)*)"(?::(-?\d+))?)?(?::(R|L))?$/,
+    regex:
+      /^T(\d+):"((?:[^"\\]|\\.)*)"(?::(\d))?\s+(->|=>)\s+T(\d+):"((?:[^"\\]|\\.)*)"(?::(\d))?(?:\s+"((?:[^"\\]|\\.)*)"(?::(-?\d+))?)?(?::(R|L))?(?:\s*#.*)?$/,
     fn: (d, ...m) => {
       const label = m[7] ? stringSanitize(m[7]) : undefined;
       const labelPos = m[8] ? Number(m[8]) : 0;
@@ -134,6 +185,11 @@ const TEMPLATES: { [key: string]: Template } = {
 export function parse(input: string): Diagram {
   const ret: Diagram = {
     title: "Untitled Diagram",
+    config: {
+      tickWidth: 50,
+      tickFreq: 1,
+      legendMode: "freq",
+    },
     lifelines: {},
     states: {},
     ticks: [],
@@ -141,16 +197,21 @@ export function parse(input: string): Diagram {
     arrows: [],
   };
 
-  input.split(/\r?\n/g).forEach((line) => {
+  input.split(/\r?\n/g).forEach((line, i) => {
     // Ignore commented lines
     if (line.startsWith("#")) return;
 
-    Object.values(TEMPLATES).forEach((template) => {
-      const matches = template.regex.exec(line);
-      if (matches !== null) {
-        template.fn(ret, ...matches.slice(1));
-      }
-    });
+    try {
+      Object.values(TEMPLATES).forEach((template) => {
+        const matches = template.regex.exec(line);
+        if (matches !== null) {
+          template.fn(ret, ...matches.slice(1));
+        }
+      });
+    } catch (e) {
+      console.error(`Error detected on line ${i}:`);
+      throw e;
+    }
   });
 
   return ret;

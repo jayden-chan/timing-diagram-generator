@@ -1,4 +1,5 @@
 import { ProcessedDiagram, ProcessedTick } from "./diagram";
+import { DiagramConfig } from "./parser";
 import {
   Coord,
   arrow,
@@ -14,7 +15,6 @@ import {
 
 const TIMELINE_STROKE_WIDTH = 2;
 const TICK_HEIGHT = 40;
-const TICK_WIDTH = 50;
 const LIFELINE_OUTER_MARGIN = 45;
 const LIFELINE_BOX_MARGIN_UPPER = 50;
 const LIFELINE_BOX_MARGIN_LOWER = 20;
@@ -30,16 +30,17 @@ export function render(d: ProcessedDiagram): string {
       .flat()
       .map((s) => s.length)
   );
+
   const longestLifelineName = Math.max(
     ...Object.keys(d.lifelines).map((s) => s.length)
   );
 
-  const lifelineBaseX = (longestLifelineName + longestStateName) * 11;
+  const lifelineBaseX = longestLifelineName * 22 + longestStateName * 6;
 
   svg.push(text([10, 30], "title", d.title));
 
-  const heights: { [key: string]: number } = {};
-  const lifelineConnectionPoints: { [key: string]: Coord[][] } = {};
+  const heights: Record<string, number> = {};
+  const lifelineConnectionPoints: Record<string, Coord[][]> = {};
   let currHeight = 70;
 
   Object.keys(d.lifelines).forEach((l) => {
@@ -47,7 +48,9 @@ export function render(d: ProcessedDiagram): string {
       d.lifelines[l].style === "simplified"
         ? genNormalLifeline
         : genSimpleLifeline;
+
     const [boxSvg, height] = genFn({
+      config: d.config,
       lifelineBaseX: lifelineBaseX,
       yCoord: currHeight,
       lifelineName: l,
@@ -61,6 +64,7 @@ export function render(d: ProcessedDiagram): string {
 
     heights[l] = h;
     lifelineConnectionPoints[l] = getArrowAttachmentPoints({
+      config: d.config,
       ticks: d.ticks,
       lifelineName: l,
       lifelineBaseX,
@@ -73,11 +77,13 @@ export function render(d: ProcessedDiagram): string {
   d.spans.forEach((s) => {
     const h =
       heights[s.lifeline] - d.states[s.lifeline].length * TICK_HEIGHT + 5;
-    const length = (s.destTick - s.originTick) * TICK_WIDTH;
+
+    const length = (s.destTick - s.originTick) * d.config.tickWidth;
+
     svg.push(
       generateSpan(
         length,
-        [lifelineBaseX + s.originTick * TICK_WIDTH, h],
+        [lifelineBaseX + s.originTick * d.config.tickWidth, h],
         s.label
       )
     );
@@ -105,11 +111,9 @@ export function render(d: ProcessedDiagram): string {
     }
   });
 
-  svg.push(genLegends(d.ticks.length, currHeight - 20, lifelineBaseX));
-
   const labelBoxHeight = 45;
   const labelBoxWidth = d.title.length * 14;
-  const width = (d.ticks.length - 1) * TICK_WIDTH + lifelineBaseX + 30;
+  const width = (d.ticks.length - 1) * d.config.tickWidth + lifelineBaseX + 30;
   svg.unshift(
     genSVGHeader([width, currHeight], [labelBoxWidth, labelBoxHeight])
   );
@@ -119,6 +123,7 @@ export function render(d: ProcessedDiagram): string {
 }
 
 function getArrowAttachmentPoints(input: {
+  config: DiagramConfig;
   ticks: ProcessedTick[];
   lifelineName: string;
   lifelineBaseX: number;
@@ -131,67 +136,64 @@ function getArrowAttachmentPoints(input: {
 }
 
 function genLifelineBox(input: {
+  config: DiagramConfig;
+  ticks: ProcessedTick[];
   lifelineBaseX: number;
   lifelineName: string;
   yCoord: number;
   height: number;
-  numTicks: number;
 }): string {
-  const { lifelineBaseX, lifelineName, yCoord, numTicks, height } = input;
+  const { config, lifelineBaseX, lifelineName, yCoord, ticks, height } = input;
   const ret = [];
   ret.push(
     rect(
       [lifelineBaseX - 10, yCoord],
-      [(numTicks - 1) * TICK_WIDTH + 20, height]
+      [(ticks.length - 1) * config.tickWidth + 20, height]
     )
   );
 
   ret.push(text([20, yCoord + height / 2], "lifeline-label", lifelineName));
-
-  for (let i = 0; i < numTicks; i++) {
-    ret.push(
-      line(
-        [i * TICK_WIDTH + lifelineBaseX, yCoord + height - 5],
-        [i * TICK_WIDTH + lifelineBaseX, yCoord + height + 10]
-      )
-    );
-  }
+  ret.push(
+    genLegends(config, ticks, yCoord + height + 25, lifelineBaseX, lifelineName)
+  );
 
   return ret.join("");
 }
 
 function genNormalLifeline(input: {
+  config: DiagramConfig;
   lifelineBaseX: number;
   yCoord: number;
   lifelineName: string;
   states: string[];
   ticks: ProcessedTick[];
 }): [string, number] {
-  const { lifelineBaseX, yCoord, lifelineName, states, ticks } = input;
-  const height = TICK_HEIGHT + LIFELINE_BOX_MARGIN_SIMPLE;
+  const { config, lifelineBaseX, yCoord, lifelineName, states, ticks } = input;
+  const height = config.tickWidth + LIFELINE_BOX_MARGIN_SIMPLE;
   const ret = [];
   ret.push(
     genLifelineBox({
+      config,
+      ticks,
       lifelineBaseX,
       lifelineName,
       yCoord,
       height,
-      numTicks: ticks.length,
     })
   );
 
-  const y = yCoord + height - LIFELINE_BOX_MARGIN_LOWER - TICK_HEIGHT;
+  const y = yCoord + height - LIFELINE_BOX_MARGIN_LOWER - config.tickWidth;
   ret.push(genSideTick([lifelineBaseX, y], "State"));
 
   let prevX = lifelineBaseX;
   ticks.forEach((t, i) => {
-    const x = lifelineBaseX + i * TICK_WIDTH;
+    const x = lifelineBaseX + i * config.tickWidth;
     if (i !== 0 && t[lifelineName] !== ticks[i - 1][lifelineName]) {
       ret.push(
         text(
           [prevX + (x - prevX) / 2, y + 5],
           "simple",
-          states[ticks[i - 1][lifelineName]],
+          states[ticks[i - 1][lifelineName].state_idx],
           "middle"
         )
       );
@@ -201,7 +203,7 @@ function genNormalLifeline(input: {
         text(
           [prevX + (x - prevX) / 2, y + 5],
           "simple",
-          states[t[lifelineName]],
+          states[t[lifelineName].state_idx],
           "middle"
         )
       );
@@ -209,6 +211,7 @@ function genNormalLifeline(input: {
   });
 
   const cParams = {
+    config,
     ticks,
     lifelineName,
     lifelineBaseX,
@@ -225,22 +228,24 @@ function genNormalLifeline(input: {
 }
 
 function genSimpleLifeline(input: {
+  config: DiagramConfig;
   lifelineBaseX: number;
   yCoord: number;
   lifelineName: string;
   states: string[];
   ticks: ProcessedTick[];
 }): [string, number] {
-  const { lifelineBaseX, yCoord, lifelineName, states, ticks } = input;
+  const { config, lifelineBaseX, yCoord, lifelineName, states, ticks } = input;
   const height = (states.length - 1) * TICK_HEIGHT + LIFELINE_BOX_MARGIN;
   const ret = [];
   ret.push(
     genLifelineBox({
+      config,
+      ticks,
       lifelineBaseX,
       lifelineName,
       yCoord,
       height,
-      numTicks: ticks.length,
     })
   );
 
@@ -253,6 +258,7 @@ function genSimpleLifeline(input: {
   ret.push(
     polyline(
       genTimelineCoordsNormal({
+        config,
         ticks,
         lifelineName,
         lifelineBaseX,
@@ -273,45 +279,62 @@ function genSideTick([x, y]: Coord, label: string): string {
 }
 
 function genLegends(
-  numTicks: number,
+  config: DiagramConfig,
+  ticks: ProcessedTick[],
   yCoord: number,
-  lifelineBaseX: number
+  lifelineBaseX: number,
+  lifelineName: string
 ): string {
   const ret = [];
-  for (let i = 0; i < numTicks; i++) {
-    ret.push(
-      text(
-        [i * TICK_WIDTH + lifelineBaseX, yCoord],
-        "simple",
-        i.toString(),
-        "middle"
-      )
-    );
+  for (let i = 0; i < ticks.length; i++) {
+    if (
+      (config.legendMode === "freq" && i % config.tickFreq === 0) ||
+      (config.legendMode === "significant" &&
+        ticks[i][lifelineName].significant)
+    ) {
+      ret.push(
+        text(
+          [i * config.tickWidth + lifelineBaseX, yCoord],
+          "simple",
+          i.toString(),
+          "middle"
+        )
+      );
+      ret.push(
+        line(
+          [i * config.tickWidth + lifelineBaseX, yCoord - 30],
+          [i * config.tickWidth + lifelineBaseX, yCoord - 15]
+        )
+      );
+    }
   }
 
   return ret.join("");
 }
 
 function genTimelineCoordsNormal(input: {
+  config: DiagramConfig;
   ticks: ProcessedTick[];
   lifelineName: string;
   lifelineBaseX: number;
   yCoord: number;
 }): Coord[][] {
-  const { ticks, lifelineName, lifelineBaseX, yCoord } = input;
+  const { config, ticks, lifelineName, lifelineBaseX, yCoord } = input;
   return ticks.reduce((acc, curr, i, arr) => {
     const pointsForThisTick: Coord[] = [];
     if (i > 0 && curr[lifelineName] !== arr[i - 1][lifelineName]) {
       pointsForThisTick.push([
-        lifelineBaseX + i * TICK_WIDTH,
+        lifelineBaseX + i * config.tickWidth,
         yCoord -
           LIFELINE_BOX_MARGIN_LOWER -
-          arr[i - 1][lifelineName] * TICK_HEIGHT,
+          arr[i - 1][lifelineName].state_idx * TICK_HEIGHT,
       ]);
     }
     pointsForThisTick.push([
-      lifelineBaseX + i * TICK_WIDTH,
-      yCoord - LIFELINE_BOX_MARGIN_LOWER - curr[lifelineName] * TICK_HEIGHT,
+      lifelineBaseX + i * config.tickWidth,
+      yCoord -
+        LIFELINE_BOX_MARGIN_LOWER -
+        curr[lifelineName].state_idx * TICK_HEIGHT,
     ]);
     acc.push(pointsForThisTick);
     return acc;
@@ -319,13 +342,14 @@ function genTimelineCoordsNormal(input: {
 }
 
 function genTimelineCoordsSimple(input: {
+  config: DiagramConfig;
   ticks: ProcessedTick[];
   lifelineName: string;
   lifelineBaseX: number;
   yCoord: number;
   side: "top" | "bottom";
 }): Coord[][] {
-  const { ticks, lifelineName, lifelineBaseX, yCoord, side } = input;
+  const { config, ticks, lifelineName, lifelineBaseX, yCoord, side } = input;
   const yMultiplier = side === "top" ? 1.5 : 0.5;
   const yCenter = yCoord - LIFELINE_BOX_MARGIN_LOWER - TICK_HEIGHT;
   const yNorm = yCoord - LIFELINE_BOX_MARGIN_LOWER - TICK_HEIGHT * yMultiplier;
@@ -334,18 +358,18 @@ function genTimelineCoordsSimple(input: {
       const pointsForThisTick: Coord[] = [];
       if (i !== 0 && curr[lifelineName] !== arr[i - 1][lifelineName]) {
         pointsForThisTick.push([
-          lifelineBaseX + i * TICK_WIDTH - TICK_WIDTH / 3,
+          lifelineBaseX + i * config.tickWidth - config.tickWidth / 3,
           yNorm,
         ]);
-        pointsForThisTick.push([lifelineBaseX + i * TICK_WIDTH, yCenter]);
+        pointsForThisTick.push([lifelineBaseX + i * config.tickWidth, yCenter]);
         pointsForThisTick.push([
-          lifelineBaseX + i * TICK_WIDTH + TICK_WIDTH / 3,
+          lifelineBaseX + i * config.tickWidth + config.tickWidth / 3,
           yNorm,
         ]);
       }
 
       if (i === arr.length - 1) {
-        pointsForThisTick.push([lifelineBaseX + i * TICK_WIDTH, yNorm]);
+        pointsForThisTick.push([lifelineBaseX + i * config.tickWidth, yNorm]);
       }
       acc.push(pointsForThisTick);
       return acc;
@@ -355,24 +379,25 @@ function genTimelineCoordsSimple(input: {
 }
 
 function getSimpleTimelineAttachmentPoints(input: {
+  config: DiagramConfig;
   ticks: ProcessedTick[];
   lifelineName: string;
   lifelineBaseX: number;
   yCoord: number;
 }): Coord[][] {
-  const { ticks, lifelineName, lifelineBaseX, yCoord } = input;
+  const { config, ticks, lifelineName, lifelineBaseX, yCoord } = input;
   const yCenter = yCoord - LIFELINE_BOX_MARGIN_LOWER - TICK_HEIGHT;
   return ticks.reduce((acc, curr, i, arr) => {
     const pointsForThisTick: Coord[] = [];
     if (i !== 0 && curr[lifelineName] !== arr[i - 1][lifelineName]) {
-      pointsForThisTick.push([lifelineBaseX + i * TICK_WIDTH, yCenter]);
+      pointsForThisTick.push([lifelineBaseX + i * config.tickWidth, yCenter]);
     } else {
       pointsForThisTick.push([
-        lifelineBaseX + i * TICK_WIDTH,
+        lifelineBaseX + i * config.tickWidth,
         yCenter + TICK_HEIGHT / 2,
       ]);
       pointsForThisTick.push([
-        lifelineBaseX + i * TICK_WIDTH,
+        lifelineBaseX + i * config.tickWidth,
         yCenter - TICK_HEIGHT / 2,
       ]);
     }

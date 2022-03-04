@@ -7,7 +7,7 @@ export function genSVGHeader(
   const borderWidth = 2;
   const labelBoxEdgeSize = 20;
   return `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
 <style>
   .title { font: bold 20px sans-serif }
   .lifeline-label { font: bold 17px sans-serif }
@@ -29,7 +29,9 @@ ${polyline(
     [0, height],
     [0, 0],
     [width, 0],
-  ].map((ee) => ee.map((e) => (e === 0 ? borderWidth : e - borderWidth))),
+  ].map((ee) =>
+    ee.map((e) => (e === 0 ? borderWidth / 2 : e - borderWidth / 2))
+  ),
   borderWidth
 )}
 ${polyline(

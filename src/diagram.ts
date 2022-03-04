@@ -1,30 +1,22 @@
-import { Arrow, Span, States, Diagram } from "./parser";
+import { Diagram } from "./parser";
 
-export type ProcessedTick = { [key: string]: number };
+export type ProcessedTick = Record<
+  string,
+  {
+    state_idx: number;
+    significant: boolean;
+  }
+>;
 
-export type ProcessedDiagram = {
-  title: string;
-  lifelines: {
-    [key: string]: {
-      style: "simplified" | "normal";
-    };
-  };
-  spans: Span[];
-  states: States;
+export type ProcessedDiagram = Omit<Diagram, "ticks"> & {
   ticks: ProcessedTick[];
-  arrows: Arrow[];
 };
 
 export function interpolateTicks(d: Diagram): ProcessedTick[] {
-  const tMax = d.ticks.reduce((acc, curr) => {
-    if (curr.time > acc) {
-      return curr.time;
-    }
-    return acc;
-  }, 0);
+  const tMax = Math.max(...d.ticks.map((t) => t.time));
 
   const prevStates = Object.keys(d.states).reduce((acc, curr) => {
-    acc[curr] = 0;
+    acc[curr] = { state_idx: 0, significant: false };
     return acc;
   }, {} as ProcessedTick);
 
@@ -36,12 +28,12 @@ export function interpolateTicks(d: Diagram): ProcessedTick[] {
     );
 
     const newTick: ProcessedTick = ticksForCurrentT.reduce((acc, curr) => {
-      acc[curr.lifeline] = curr.state_idx;
+      acc[curr.lifeline] = { state_idx: curr.state_idx, significant: true };
       return acc;
     }, {} as ProcessedTick);
 
     missingLifelines.forEach((l) => {
-      newTick[l] = prevStates[l];
+      newTick[l] = { ...prevStates[l], significant: false };
     });
 
     Object.entries(newTick).forEach(([l, v]) => {

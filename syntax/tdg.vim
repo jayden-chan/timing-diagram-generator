@@ -29,7 +29,7 @@ syn keyword tdgBasicKeyword config nextgroup=tdgConVar skipwhite
 syn keyword tdgBasicKeyword lifeline span nextgroup=tdgQuotedString skipwhite
 syn keyword tdgBasicKeyword state style nextgroup=tdgQuotedString,tdgQuotedString skipwhite
 syn keyword tdgTitleKeyword title nextgroup=tdgQuotedString skipwhite
-syn keyword tdgTitleKeyword var nextgroup=tdgVar skipwhite
+syn keyword tdgTitleKeyword macro nextgroup=tdgVar skipwhite
 
 syn keyword tdgTodo contained TODO FIXME XXX NOTE
 syn match tdgComment "#.*$" contains=tdgTodo

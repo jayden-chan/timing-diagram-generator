@@ -200,10 +200,41 @@ export function parse(input: string): Diagram {
     arrows: [],
   };
 
-  input.split(/\r?\n/g).forEach((line, i) => {
-    // Ignore commented lines
-    if (line.startsWith("#")) return;
+  const lines = input
+    .split(/\r?\n/g)
+    .map((l) => l.trim())
+    .filter((line) => !line.startsWith("#"));
 
+  const macros: Record<string, string> = {};
+  const macroRegex = /^macro ([A-Za-z1-9_-]+) (.+?)(?:\s*#.*)?$/;
+
+  lines.forEach((line) => {
+    const matches = macroRegex.exec(line);
+    if (matches !== null) {
+      macros[matches[1]] = matches[2];
+    }
+  });
+
+  const macroReplaceRegexes = Object.entries(macros).map(([key, val]) => [
+    new RegExp("(\\s+)" + key + "(\\s+)"),
+    val,
+  ]);
+
+  const macroReplace = (line: string): string => {
+    const matches = macroRegex.exec(line);
+    if (matches !== null) {
+      return "";
+    }
+    let ret = line;
+    macroReplaceRegexes.forEach(
+      ([regex, val]) => (ret = ret.replace(regex, `$1${val}$2`))
+    );
+    return ret;
+  };
+
+  const finalLines = lines.map((l) => macroReplace(l)).filter((l) => l !== "");
+
+  finalLines.forEach((line, i) => {
     try {
       Object.values(TEMPLATES).forEach((template) => {
         const matches = template.regex.exec(line);

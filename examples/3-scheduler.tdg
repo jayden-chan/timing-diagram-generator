@@ -3,69 +3,73 @@ title "Schedule over a period of 300 ms"
 config TICK_WIDTH 4
 config LEGEND_MODE significant
 
-lifeline "Without Task C"
+macro L1 "Without Task C"
+macro L2 "With Task C"
+macro L3 "With Several Tasks"
 
-state "Without Task C" "Idle" 0
-state "Without Task C" "Task A" 1
-state "Without Task C" "Task B" 2
+lifeline L1
 
-style "Without Task C" Slice
+state L1 "Idle" 0
+state L1 "Task A" 1
+state L1 "Task B" 2
+
+style L1 Slice
 
 # Timing definitions
-T0   "Without Task C" "Task A"
-T40  "Without Task C" "Task B"
-T70  "Without Task C" "Idle"
-T100 "Without Task C" "Task A"
-T140 "Without Task C" "Idle"
-T150 "Without Task C" "Task B"
-T180 "Without Task C" "Idle"
-T200 "Without Task C" "Task A"
-T240 "Without Task C" "Idle"
-T300 "Without Task C" "Idle"
+T0   L1 "Task A"
+T40  L1 "Task B"
+T70  L1 "Idle"
+T100 L1 "Task A"
+T140 L1 "Idle"
+T150 L1 "Task B"
+T180 L1 "Idle"
+T200 L1 "Task A"
+T240 L1 "Idle"
+T300 L1 "Idle"
 
-lifeline "With Task C"
+lifeline L2
 
-state "With Task C" "Idle" 0
-state "With Task C" "Task A" 1
-state "With Task C" "Task B" 2
-state "With Task C" "Task C" 3
+state L2 "Idle" 0
+state L2 "Task A" 1
+state L2 "Task B" 2
+state L2 "Task C" 3
 
-style "With Task C" Slice
+style L2 Slice
 
 # A period 100 ms time 40ms
 # B period 150 ms time 30ms
 # C period 50 ms time 20ms
 
 # Timing definitions
-T0   "With Task C" "Task C" # A40 B30 C20
-T20  "With Task C" "Task A" # A40 B30
-T50  "With Task C" "Task C" # A10 B30 C20
-T70  "With Task C" "Task A" # A10 B30
-T80  "With Task C" "Task B" # B30
-T100 "With Task C" "Task C" # B10 A40 C20
-T120 "With Task C" "Task B" # B10 A40
-T130 "With Task C" "Task A" # A40
-T150 "With Task C" "Task C" # A20 C20 B30
-T170 "With Task C" "Task A" # A20 B30
-T190 "With Task C" "Task B" # B30
-T200 "With Task C" "Task C" # B20 A40 C20
-T220 "With Task C" "Task B" # B20 A40
-T240 "With Task C" "Task A" # A40
-T250 "With Task C" "Task C" # A30 C20
-T270 "With Task C" "Task A" # A30
-T300 "With Task C" "Task C" # A40 B30 C20 -- repeat
+T0   L2 "Task C" # A40 B30 C20
+T20  L2 "Task A" # A40 B30
+T50  L2 "Task C" # A10 B30 C20
+T70  L2 "Task A" # A10 B30
+T80  L2 "Task B" # B30
+T100 L2 "Task C" # B10 A40 C20
+T120 L2 "Task B" # B10 A40
+T130 L2 "Task A" # A40
+T150 L2 "Task C" # A20 C20 B30
+T170 L2 "Task A" # A20 B30
+T190 L2 "Task B" # B30
+T200 L2 "Task C" # B20 A40 C20
+T220 L2 "Task B" # B20 A40
+T240 L2 "Task A" # A40
+T250 L2 "Task C" # A30 C20
+T270 L2 "Task A" # A30
+T300 L2 "Task C" # A40 B30 C20 -- repeat
 
 # These are the lifelines
-lifeline "With Several Tasks"
+lifeline L3
 
-style "With Several Tasks" Slice
+style L3 Slice
 
-state "With Several Tasks" "Idle" 0
-state "With Several Tasks" "Task A" 1
-state "With Several Tasks" "Task B" 2
-state "With Several Tasks" "Task C" 3
-state "With Several Tasks" "Task D" 4
-state "With Several Tasks" "Task E" 5
+state L3 "Idle" 0
+state L3 "Task A" 1
+state L3 "Task B" 2
+state L3 "Task C" 3
+state L3 "Task D" 4
+state L3 "Task E" 5
 
 # Time 0:    Task A  (Priority: 1, Execution time: 30)
 #            Task B  (Priority: 2, Execution time: 20)
@@ -75,12 +79,12 @@ state "With Several Tasks" "Task E" 5
 # Time 130:  Task B  (Priority: 2, Execution time: 30)
 
 # Timing definitions
-T0   "With Several Tasks" "Task A" # A30 B20
-T30  "With Several Tasks" "Task B" # B20
-T40  "With Several Tasks" "Task C" # B10 C20
-T60  "With Several Tasks" "Task B" # B10
-T70  "With Several Tasks" "Idle"   #
-T100 "With Several Tasks" "Task D" # D40
-T140 "With Several Tasks" "Task E" # E50 B30
-T190 "With Several Tasks" "Task B" # B30
-T220 "With Several Tasks" "Idle"   #
+T0   L3 "Task A" # A30 B20
+T30  L3 "Task B" # B20
+T40  L3 "Task C" # B10 C20
+T60  L3 "Task B" # B10
+T70  L3 "Idle"   #
+T100 L3 "Task D" # D40
+T140 L3 "Task E" # E50 B30
+T190 L3 "Task B" # B30
+T220 L3 "Idle"   #

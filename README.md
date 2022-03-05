@@ -145,3 +145,19 @@ style "My Lifeline" Simplified
 # Display color-coded slices representing the current state
 style "My Lifeline" Slice
 ```
+
+### Macros
+Syntax
+```
+macro <name> <value>
+```
+Example
+```
+macro MyMacro "Sending update to server"
+
+# expands to `lifeline "Sending update to server"`
+lifeline MyMacro
+
+state MyMacro "My First State" 0
+state MyMacro "My Second State" 1
+```

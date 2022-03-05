@@ -9,7 +9,7 @@ state "Without Task C" "Idle" 0
 state "Without Task C" "Task A" 1
 state "Without Task C" "Task B" 2
 
-style "Without Task C" color
+style "Without Task C" Slice
 
 # Timing definitions
 T0   "Without Task C" "Task A"
@@ -30,7 +30,7 @@ state "With Task C" "Task A" 1
 state "With Task C" "Task B" 2
 state "With Task C" "Task C" 3
 
-style "With Task C" color
+style "With Task C" Slice
 
 # A period 100 ms time 40ms
 # B period 150 ms time 30ms
@@ -54,3 +54,33 @@ T240 "With Task C" "Task A" # A40
 T250 "With Task C" "Task C" # A30 C20
 T270 "With Task C" "Task A" # A30
 T300 "With Task C" "Task C" # A40 B30 C20 -- repeat
+
+# These are the lifelines
+lifeline "With Several Tasks"
+
+style "With Several Tasks" Slice
+
+state "With Several Tasks" "Idle" 0
+state "With Several Tasks" "Task A" 1
+state "With Several Tasks" "Task B" 2
+state "With Several Tasks" "Task C" 3
+state "With Several Tasks" "Task D" 4
+state "With Several Tasks" "Task E" 5
+
+# Time 0:    Task A  (Priority: 1, Execution time: 30)
+#            Task B  (Priority: 2, Execution time: 20)
+# Time 40:   Task C  (Priority: 1, Execution time: 20)
+# Time 100:  Task D  (Priority: 0, Execution time: 40)
+# Time 120:  Task E  (Priority: 0, Execution time: 50)
+# Time 130:  Task B  (Priority: 2, Execution time: 30)
+
+# Timing definitions
+T0   "With Several Tasks" "Task A" # A30 B20
+T30  "With Several Tasks" "Task B" # B20
+T40  "With Several Tasks" "Task C" # B10 C20
+T60  "With Several Tasks" "Task B" # B10
+T70  "With Several Tasks" "Idle"   #
+T100 "With Several Tasks" "Task D" # D40
+T140 "With Several Tasks" "Task E" # E50 B30
+T190 "With Several Tasks" "Task B" # B30
+T220 "With Several Tasks" "Idle"   #

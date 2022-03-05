@@ -132,15 +132,16 @@ T11:"Web Server" => T12:"Web Browser":1 "HTTP Response":45
 ### Lifeline Timeline Style
 Syntax
 ```
-style "<lifeline>" Normal|Simplified
-style "<lifeline>" color
+style "<lifeline>" Normal|Simplified|Slice
 ```
 Example
 ```
+# display a line graph representing the changes in state
 style "My Lifeline" Normal
+
+# only display one state at a time
 style "My Lifeline" Simplified
 
-# enable color coding for the states in the lifeline
-# (only available with the "Normal" styling option)
-style "My Lifeline" color
+# Display color-coded slices representing the current state
+style "My Lifeline" Slice
 ```

@@ -32,14 +32,15 @@ export type DiagramConfig = {
   legendMode: "freq" | "significant";
 };
 
+export type LifelineStyle = "simplified" | "normal" | "slice";
+
 export type Diagram = {
   title: string;
   config: DiagramConfig;
   lifelines: Record<
     string,
     {
-      style: "simplified" | "normal";
-      color: boolean;
+      style: LifelineStyle;
     }
   >;
   spans: Span[];
@@ -109,21 +110,15 @@ const TEMPLATES: Record<string, Template> = {
     fn: (d, m) => {
       d.lifelines[stringSanitize(m)] = {
         style: "normal",
-        color: false,
       };
     },
   },
   style: {
-    regex: /^style\s+"((?:[^"\\]|\\.)*)"\s+(Simplified|Normal)(?:\s*#.*)?$/,
+    regex:
+      /^style\s+"((?:[^"\\]|\\.)*)"\s+(Simplified|Normal|Slice)(?:\s*#.*)?$/,
     fn: (d, m1, m2) => {
       // @ts-ignore -- type is satisifed through the regex
       d.lifelines[stringSanitize(m1)].style = m2.toLowerCase();
-    },
-  },
-  color: {
-    regex: /^style\s+"((?:[^"\\]|\\.)*)"\s+(?:color)(?:\s*#.*)?$/,
-    fn: (d, m1) => {
-      d.lifelines[stringSanitize(m1)].color = true;
     },
   },
   state: {

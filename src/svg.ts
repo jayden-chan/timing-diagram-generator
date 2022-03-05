@@ -1,5 +1,5 @@
 import { ProcessedDiagram, ProcessedTick } from "./diagram";
-import { DiagramConfig } from "./parser";
+import { DiagramConfig, LifelineStyle } from "./parser";
 import {
   Coord,
   arrow,
@@ -12,14 +12,16 @@ import {
   rect,
   text,
   polygon,
+  dashedLine,
 } from "./svg_utils";
 
 const TIMELINE_STROKE_WIDTH = 2;
 const TICK_HEIGHT = 40;
+const SIMPLE_STATECHANGE_WIDTH = 40;
 const LIFELINE_OUTER_MARGIN = 45;
-const LIFELINE_BOX_MARGIN_UPPER = 50;
+const LIFELINE_BOX_MARGIN_UPPER = 40;
 const LIFELINE_BOX_MARGIN_LOWER = 20;
-const LIFELINE_BOX_MARGIN_SIMPLE = LIFELINE_BOX_MARGIN_LOWER + 70;
+const LIFELINE_BOX_MARGIN_SIMPLE = LIFELINE_BOX_MARGIN_UPPER;
 const LIFELINE_BOX_MARGIN =
   LIFELINE_BOX_MARGIN_UPPER + LIFELINE_BOX_MARGIN_LOWER;
 
@@ -49,7 +51,8 @@ export function render(d: ProcessedDiagram): string {
     ...Object.keys(d.lifelines).map((s) => s.length)
   );
 
-  const lifelineBaseX = longestLifelineName * 22 + longestStateName * 6;
+  const lifelineBaseX =
+    longestLifelineName * 10 + longestStateName * 6 + LIFELINE_OUTER_MARGIN * 2;
 
   svg.push(text([10, 30], "title", d.title));
 
@@ -65,7 +68,7 @@ export function render(d: ProcessedDiagram): string {
 
     const [boxSvg, height] = genFn({
       config: d.config,
-      color: d.lifelines[l].color,
+      color: d.lifelines[l].style === "slice",
       lifelineBaseX: lifelineBaseX,
       yCoord: currHeight,
       lifelineName: l,
@@ -143,7 +146,7 @@ function getArrowAttachmentPoints(input: {
   lifelineName: string;
   lifelineBaseX: number;
   yCoord: number;
-  style: "simplified" | "normal";
+  style: LifelineStyle;
 }): Coord[][] {
   return input.style === "normal"
     ? genTimelineCoordsNormal(input)
@@ -184,7 +187,7 @@ function genSimpleLifeline(input: {
   ticks: ProcessedTick[];
 }): [string, number] {
   const { config, lifelineBaseX, yCoord, lifelineName, states, ticks } = input;
-  const height = TICK_HEIGHT + LIFELINE_BOX_MARGIN_SIMPLE;
+  const height = TICK_HEIGHT + LIFELINE_BOX_MARGIN_SIMPLE * 2;
   const ret = [];
   ret.push(
     genLifelineBox({
@@ -271,7 +274,11 @@ function genNormalLifeline(input: {
 
   states.forEach((state, i) => {
     const y = yCoord + height - LIFELINE_BOX_MARGIN_LOWER - i * TICK_HEIGHT;
-    ret.push(genSideTick([lifelineBaseX, y], state));
+    if (color) {
+      ret.push(genSideTick([lifelineBaseX, y], state, COLORS[i]));
+    } else {
+      ret.push(genSideTick([lifelineBaseX, y], state));
+    }
   });
 
   // Shading
@@ -282,24 +289,25 @@ function genNormalLifeline(input: {
         ticks,
         lifelineName,
         lifelineBaseX,
+        height,
         yCoord: yCoord + height,
       })
     );
+  } else {
+    // Timeline
+    ret.push(
+      polyline(
+        genTimelineCoordsNormal({
+          config,
+          ticks,
+          lifelineName,
+          lifelineBaseX,
+          yCoord: yCoord + height,
+        }).flat(),
+        TIMELINE_STROKE_WIDTH
+      )
+    );
   }
-
-  // Timeline
-  ret.push(
-    polyline(
-      genTimelineCoordsNormal({
-        config,
-        ticks,
-        lifelineName,
-        lifelineBaseX,
-        yCoord: yCoord + height,
-      }).flat(),
-      TIMELINE_STROKE_WIDTH
-    )
-  );
 
   return [ret.join(""), height];
 }
@@ -309,42 +317,62 @@ function genLifelineShading(input: {
   ticks: ProcessedTick[];
   lifelineName: string;
   lifelineBaseX: number;
+  height: number;
   yCoord: number;
 }): string {
-  const { config, lifelineName, lifelineBaseX, yCoord } = input;
+  const { config, lifelineName, lifelineBaseX, height, yCoord } = input;
   const ticks = input.ticks.map((t) => t[lifelineName]);
-  const ret: string[] = [];
+  const colors: string[] = [];
+  const lines: string[] = [];
   const bottomY = yCoord - LIFELINE_BOX_MARGIN_LOWER;
+  const topY = yCoord - height;
 
   let state = ticks[0].state_idx;
   let prevX = lifelineBaseX;
 
   ticks.forEach((tick, i) => {
-    if (tick.significant && tick.state_idx !== state) {
-      const topY = yCoord - LIFELINE_BOX_MARGIN_LOWER - state * TICK_HEIGHT;
-      const topLeft: Coord = [prevX, topY];
-      const topRight: Coord = [lifelineBaseX + i * config.tickWidth, topY];
+    if (i > 0 && tick.significant) {
+      const currY = yCoord - LIFELINE_BOX_MARGIN_LOWER - state * TICK_HEIGHT;
+      const currX = lifelineBaseX + i * config.tickWidth;
+      const topLeft: Coord = [prevX, currY];
+      const topRight: Coord = [currX, currY];
       const bottomLeft: Coord = [prevX, bottomY];
-      const bottomRight: Coord = [
-        lifelineBaseX + i * config.tickWidth,
-        bottomY,
-      ];
+      const bottomRight: Coord = [currX, bottomY];
 
-      ret.push(
+      colors.push(
         polygon([topLeft, topRight, bottomRight, bottomLeft], COLORS[state])
       );
+      lines.push(polyline([topLeft, topRight], TIMELINE_STROKE_WIDTH));
+      lines.push(dashedLine([currX, bottomY], [currX, topY]));
       state = tick.state_idx;
       prevX = lifelineBaseX + i * config.tickWidth;
     }
   });
 
-  return ret.join("");
+  return colors.join("") + lines.join("");
 }
 
-function genSideTick([x, y]: Coord, label: string): string {
+function genSideTick([x, y]: Coord, label: string, color?: string): string {
   const ret = [];
   ret.push(line([x - 20, y], [x - 5, y]));
-  ret.push(text([x - 25, y + 5], "simple", label, "end"));
+  if (color !== undefined) {
+    const colorSquareSize = 7;
+    const topRight: Coord = [x - 25, y - colorSquareSize];
+    const topLeft: Coord = [x - 25 - colorSquareSize * 2, y - colorSquareSize];
+    const bottomLeft: Coord = [
+      x - 25 - colorSquareSize * 2,
+      y + colorSquareSize,
+    ];
+    const bottomRight: Coord = [x - 25, y + colorSquareSize];
+    ret.push(
+      polygon([topLeft, topRight, bottomRight, bottomLeft], color, "black")
+    );
+    ret.push(
+      text([x - 25 - colorSquareSize * 2 - 10, y + 5], "simple", label, "end")
+    );
+  } else {
+    ret.push(text([x - 25, y + 5], "simple", label, "end"));
+  }
   return ret.join("");
 }
 
@@ -434,12 +462,12 @@ function genTimelineCoordsSimple(input: {
         curr[lifelineName].state_idx !== arr[i - 1][lifelineName].state_idx
       ) {
         pointsForThisTick.push([
-          lifelineBaseX + i * config.tickWidth - config.tickWidth / 3,
+          lifelineBaseX + i * config.tickWidth - SIMPLE_STATECHANGE_WIDTH / 3,
           yNorm,
         ]);
         pointsForThisTick.push([lifelineBaseX + i * config.tickWidth, yCenter]);
         pointsForThisTick.push([
-          lifelineBaseX + i * config.tickWidth + config.tickWidth / 3,
+          lifelineBaseX + i * config.tickWidth + SIMPLE_STATECHANGE_WIDTH / 3,
           yNorm,
         ]);
       }

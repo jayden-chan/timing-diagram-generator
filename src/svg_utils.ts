@@ -67,6 +67,10 @@ export function dashedArrow(from: Coord, to: Coord): string {
   return `<polyline points="${from[0]},${from[1]} ${to[0]},${to[1]}" fill="none" stroke="black" stroke-dasharray="10" marker-end="url(#arrow)" />`;
 }
 
+export function dashedLine(from: Coord, to: Coord): string {
+  return `<polyline points="${from[0]},${from[1]} ${to[0]},${to[1]}" fill="none" stroke="black" stroke-dasharray="10" />`;
+}
+
 function doubleSidedArrow(from: Coord, to: Coord): string {
   return `<polyline points="${from[0]},${from[1]} ${to[0]},${to[1]}" fill="none" stroke="black" marker-start="url(#arrow)" marker-end="url(#arrow)" />`;
 }
@@ -90,10 +94,14 @@ export function polyline(points: Coord[], strokeWidth?: number): string {
   }px"/>`;
 }
 
-export function polygon(points: Coord[], fill: string): string {
+export function polygon(
+  points: Coord[],
+  fill: string,
+  stroke?: string
+): string {
   return `<polygon points="${points
     .map((p) => `${p[0]},${p[1]}`)
-    .join(" ")}" fill="${fill}" stroke="none" />`;
+    .join(" ")}" fill="${fill}" stroke="${stroke ?? "none"}" />`;
 }
 
 export function line([x1, y1]: Coord, [x2, y2]: Coord): string {

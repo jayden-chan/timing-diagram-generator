@@ -1,18 +1,18 @@
 import { ProcessedDiagram, ProcessedTick } from "./diagram";
 import { DiagramConfig, LifelineStyle } from "./parser";
 import {
-  Coord,
   arrow,
+  Coord,
   dashedArrow,
-  genSVGHeader,
+  dashedLine,
   generateSpan,
+  genSVGHeader,
   lerp,
   line,
+  polygon,
   polyline,
   rect,
   text,
-  polygon,
-  dashedLine,
 } from "./svg_utils";
 
 const TIMELINE_STROKE_WIDTH = 2;

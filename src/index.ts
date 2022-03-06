@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-import { promisify } from "util";
 import { readFile } from "fs";
-import { parse } from "./parser";
+import { promisify } from "util";
 import { interpolateTicks } from "./diagram";
+import { parse } from "./parser";
 import { render } from "./svg";
 
 async function main(): Promise<number> {
@@ -15,7 +15,9 @@ async function main(): Promise<number> {
   try {
     file = await promisify(readFile)(process.argv[2], { encoding: "utf8" });
   } catch (e) {
-    console.error(`ERROR: Failed to read input file: ${e.message}`);
+    if (e instanceof Error) {
+      console.error(`ERROR: Failed to read input file: ${e.message}`);
+    }
     return 1;
   }
   const d = parse(file);

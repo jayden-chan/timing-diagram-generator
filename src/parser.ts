@@ -139,11 +139,11 @@ const TEMPLATES: Record<string, Template> = {
     fn: (d, ...m) => {
       const [m1, m2, m3] = m.filter((match) => match !== undefined);
       const lifeline = stringSanitize(m2);
-      const state_idx = /\d+/.test(m3)
+      const state_idx = /^\d+$/.test(m3)
         ? Number(m3)
         : d.states[lifeline].indexOf(m3);
 
-      if (state_idx < 0) {
+      if (state_idx < 0 || state_idx === null || Number.isNaN(state_idx)) {
         throw new Error(`Invalid state index "${state_idx}" detected`);
       }
 

@@ -209,7 +209,7 @@ export function parse(input: string): Diagram {
     .filter(([l]) => !l.startsWith("#"));
 
   const macros: Record<string, string> = {};
-  const macroRegex = /^macro ([A-Za-z1-9_-]+) (.+?)(?:\s*#.*)?$/;
+  const macroRegex = /^macro ([A-Za-z0-9_-]+) (.+?)(?:\s*#.*)?$/;
 
   lines.forEach(([line]) => {
     const matches = macroRegex.exec(line);

@@ -37,6 +37,7 @@ const COLORS = [
   "#bee3f8",
   "#fed7e2",
   "#c4f1f9",
+  "#c6f6d5",
 ];
 
 export function render(d: ProcessedDiagram): string {

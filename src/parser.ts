@@ -30,6 +30,7 @@ export type DiagramConfig = {
   tickWidth: number;
   tickFreq: number;
   legendMode: "freq" | "significant";
+  scale: number;
 };
 
 export type LifelineStyle = "simplified" | "normal" | "slice";
@@ -72,6 +73,7 @@ const META_CONFIG: Record<
 > = {
   TICK_WIDTH: { key: "tickWidth", parseFn: (val) => Number(val) },
   LEGEND_FREQUENCY: { key: "tickFreq", parseFn: (val) => Number(val) },
+  SCALE: { key: "scale", parseFn: (val) => Number(val) },
   LEGEND_MODE: {
     key: "legendMode",
     parseFn: (val) => {
@@ -192,6 +194,7 @@ export function parse(input: string): Diagram {
       tickWidth: 50,
       tickFreq: 1,
       legendMode: "freq",
+      scale: 1,
     },
     lifelines: {},
     states: {},
@@ -240,19 +243,21 @@ export function parse(input: string): Diagram {
   finalLines.forEach(([line, i]) => {
     try {
       let didMatch = false;
-      Object.values(TEMPLATES).forEach((template) => {
+
+      for (const template of Object.values(TEMPLATES)) {
         const matches = template.regex.exec(line);
         if (matches !== null) {
           template.fn(ret, ...matches.slice(1));
           didMatch = true;
+          break;
         }
-      });
+      }
 
       if (!didMatch) {
         console.error(`[WARN] [line ${i}]: failed to parse: ${line}`);
       }
     } catch (e) {
-      console.error(`Error detected on line ${i}:`);
+      console.error(`[ERROR] [line ${i}] Error detected:`);
       throw e;
     }
   });

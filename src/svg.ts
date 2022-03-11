@@ -12,6 +12,7 @@ import {
   polygon,
   polyline,
   rect,
+  scaleCoord,
   text,
 } from "./svg_utils";
 
@@ -40,6 +41,7 @@ const COLORS = [
 
 export function render(d: ProcessedDiagram): string {
   const svg = [];
+  const scale = d.config.scale;
 
   const longestStateName = Math.max(
     ...Object.values(d.states)
@@ -54,7 +56,7 @@ export function render(d: ProcessedDiagram): string {
   const lifelineBaseX =
     longestLifelineName * 10 + longestStateName * 6 + LIFELINE_OUTER_MARGIN * 2;
 
-  svg.push(text([10, 30], "title", d.title));
+  svg.push(text([10, 30], "title", d.title, scale));
 
   const heights: Record<string, number> = {};
   const lifelineConnectionPoints: Record<string, Coord[][]> = {};
@@ -102,22 +104,27 @@ export function render(d: ProcessedDiagram): string {
       generateSpan(
         length,
         [lifelineBaseX + s.originTick * d.config.tickWidth, h],
-        s.label
+        s.label,
+        scale
       )
     );
   });
 
   d.arrows.forEach((a) => {
-    const originPoint =
-      lifelineConnectionPoints[a.originLifeline][a.originTick][a.originIdx];
+    const originPoint = scaleCoord(
+      lifelineConnectionPoints[a.originLifeline][a.originTick][a.originIdx],
+      scale
+    );
 
-    const destPoint =
-      lifelineConnectionPoints[a.destLifeline][a.destTick][a.destIdx];
+    const destPoint = scaleCoord(
+      lifelineConnectionPoints[a.destLifeline][a.destTick][a.destIdx],
+      scale
+    );
 
     svg.push(
       a.style === "solid"
-        ? arrow(originPoint, destPoint)
-        : dashedArrow(originPoint, destPoint)
+        ? arrow(originPoint, destPoint, scale)
+        : dashedArrow(originPoint, destPoint, scale)
     );
 
     if (a.label) {
@@ -125,15 +132,15 @@ export function render(d: ProcessedDiagram): string {
       const anchor = a.labelSide === "R" ? "start" : "end";
       const [x, y] = lerp(originPoint, destPoint, labelPos);
       const xOffset = a.labelSide === "R" ? 10 : -10;
-      svg.push(text([x + xOffset, y], "simple", a.label, anchor));
+      svg.push(text([x + xOffset, y], "simple", a.label, scale, anchor));
     }
   });
 
-  const labelBoxHeight = 45;
-  const labelBoxWidth = d.title.length * 14;
+  const labelBoxHeight = 45 * (scale / 2);
+  const labelBoxWidth = d.title.length * 14 * (scale / 2);
   const width = (d.ticks.length - 1) * d.config.tickWidth + lifelineBaseX + 30;
   svg.unshift(
-    genSVGHeader([width, currHeight], [labelBoxWidth, labelBoxHeight])
+    genSVGHeader([width, currHeight], [labelBoxWidth, labelBoxHeight], scale)
   );
 
   svg.push("</svg>");
@@ -166,11 +173,19 @@ function genLifelineBox(input: {
   ret.push(
     rect(
       [lifelineBaseX - 10, yCoord],
-      [(ticks.length - 1) * config.tickWidth + 20, height]
+      [(ticks.length - 1) * config.tickWidth + 20, height],
+      config.scale
     )
   );
 
-  ret.push(text([20, yCoord + height / 2], "lifeline-label", lifelineName));
+  ret.push(
+    text(
+      [20, yCoord + height / 2],
+      "lifeline-label",
+      lifelineName,
+      config.scale
+    )
+  );
   ret.push(
     genLegends(config, ticks, yCoord + height + 25, lifelineBaseX, lifelineName)
   );
@@ -201,7 +216,7 @@ function genSimpleLifeline(input: {
   );
 
   const y = yCoord + height - LIFELINE_BOX_MARGIN_LOWER - TICK_HEIGHT;
-  ret.push(genSideTick([lifelineBaseX, y], "State"));
+  ret.push(genSideTick(config, [lifelineBaseX, y], "State"));
 
   let prevX = lifelineBaseX;
   ticks.forEach((t, i) => {
@@ -215,6 +230,7 @@ function genSimpleLifeline(input: {
           [prevX + (x - prevX) / 2, y + 5],
           "simple",
           states[ticks[i - 1][lifelineName].state_idx],
+          config.scale,
           "middle"
         )
       );
@@ -225,6 +241,7 @@ function genSimpleLifeline(input: {
           [prevX + (x - prevX) / 2, y + 5],
           "simple",
           states[t[lifelineName].state_idx],
+          config.scale,
           "middle"
         )
       );
@@ -241,8 +258,8 @@ function genSimpleLifeline(input: {
   const topLine = genTimelineCoordsSimple({ ...cParams, side: "top" });
   const bottomLine = genTimelineCoordsSimple({ ...cParams, side: "bottom" });
   ret.push(
-    polyline(topLine.flat(), TIMELINE_STROKE_WIDTH),
-    polyline(bottomLine.flat(), TIMELINE_STROKE_WIDTH)
+    polyline(topLine.flat(), config.scale, TIMELINE_STROKE_WIDTH),
+    polyline(bottomLine.flat(), config.scale, TIMELINE_STROKE_WIDTH)
   );
 
   return [ret.join(""), height];
@@ -275,9 +292,9 @@ function genNormalLifeline(input: {
   states.forEach((state, i) => {
     const y = yCoord + height - LIFELINE_BOX_MARGIN_LOWER - i * TICK_HEIGHT;
     if (color) {
-      ret.push(genSideTick([lifelineBaseX, y], state, COLORS[i]));
+      ret.push(genSideTick(config, [lifelineBaseX, y], state, COLORS[i]));
     } else {
-      ret.push(genSideTick([lifelineBaseX, y], state));
+      ret.push(genSideTick(config, [lifelineBaseX, y], state));
     }
   });
 
@@ -304,6 +321,7 @@ function genNormalLifeline(input: {
           lifelineBaseX,
           yCoord: yCoord + height,
         }).flat(),
+        config.scale,
         TIMELINE_STROKE_WIDTH
       )
     );
@@ -340,10 +358,16 @@ function genLifelineShading(input: {
       const bottomRight: Coord = [currX, bottomY];
 
       colors.push(
-        polygon([topLeft, topRight, bottomRight, bottomLeft], COLORS[state])
+        polygon(
+          [topLeft, topRight, bottomRight, bottomLeft],
+          COLORS[state],
+          config.scale
+        )
       );
-      lines.push(polyline([topLeft, topRight], TIMELINE_STROKE_WIDTH));
-      lines.push(dashedLine([currX, bottomY], [currX, topY]));
+      lines.push(
+        polyline([topLeft, topRight], config.scale, TIMELINE_STROKE_WIDTH)
+      );
+      lines.push(dashedLine([currX, bottomY], [currX, topY], config.scale));
       state = tick.state_idx;
       prevX = lifelineBaseX + i * config.tickWidth;
     }
@@ -352,9 +376,14 @@ function genLifelineShading(input: {
   return colors.join("") + lines.join("");
 }
 
-function genSideTick([x, y]: Coord, label: string, color?: string): string {
+function genSideTick(
+  config: DiagramConfig,
+  [x, y]: Coord,
+  label: string,
+  color?: string
+): string {
   const ret = [];
-  ret.push(line([x - 20, y], [x - 5, y]));
+  ret.push(line([x - 20, y], [x - 5, y], config.scale));
   if (color !== undefined) {
     const colorSquareSize = 7;
     const topRight: Coord = [x - 25, y - colorSquareSize];
@@ -365,13 +394,24 @@ function genSideTick([x, y]: Coord, label: string, color?: string): string {
     ];
     const bottomRight: Coord = [x - 25, y + colorSquareSize];
     ret.push(
-      polygon([topLeft, topRight, bottomRight, bottomLeft], color, "black")
+      polygon(
+        [topLeft, topRight, bottomRight, bottomLeft],
+        color,
+        config.scale,
+        "black"
+      )
     );
     ret.push(
-      text([x - 25 - colorSquareSize * 2 - 10, y + 5], "simple", label, "end")
+      text(
+        [x - 25 - colorSquareSize * 2 - 10, y + 5],
+        "simple",
+        label,
+        config.scale,
+        "end"
+      )
     );
   } else {
-    ret.push(text([x - 25, y + 5], "simple", label, "end"));
+    ret.push(text([x - 25, y + 5], "simple", label, config.scale, "end"));
   }
   return ret.join("");
 }
@@ -395,13 +435,15 @@ function genLegends(
           [i * config.tickWidth + lifelineBaseX, yCoord],
           "simple",
           i.toString(),
+          config.scale,
           "middle"
         )
       );
       ret.push(
         line(
           [i * config.tickWidth + lifelineBaseX, yCoord - 30],
-          [i * config.tickWidth + lifelineBaseX, yCoord - 15]
+          [i * config.tickWidth + lifelineBaseX, yCoord - 15],
+          config.scale
         )
       );
     }

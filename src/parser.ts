@@ -239,12 +239,18 @@ export function parse(input: string): Diagram {
 
   finalLines.forEach(([line, i]) => {
     try {
+      let didMatch = false;
       Object.values(TEMPLATES).forEach((template) => {
         const matches = template.regex.exec(line);
         if (matches !== null) {
           template.fn(ret, ...matches.slice(1));
+          didMatch = true;
         }
       });
+
+      if (!didMatch) {
+        console.error(`[WARN] [line ${i}]: failed to parse: ${line}`);
+      }
     } catch (e) {
       console.error(`Error detected on line ${i}:`);
       throw e;

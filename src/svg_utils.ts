@@ -37,9 +37,7 @@ ${polyline(
     [0, height],
     [0, 0],
     [width, 0],
-  ].map((ee) =>
-    ee.map((e) => (e === 0 ? borderWidth : e - borderWidth))
-  ) as Coord[],
+  ].map((ee) => ee.map((e) => (e === 0 ? 1 : e - 1))) as Coord[],
   scale,
   borderWidth
 )}

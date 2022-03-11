@@ -10,7 +10,7 @@ endif
 syn region tdgQuotedString start=/\v"/ skip=/\v\\./ end=/\v"/
 
 syn match tdgConVar '[A-Z_]\+'
-syn match tdgVar '[A-Za-z1-9_]\+' nextgroup=tdgQuotedString
+syn match tdgVar '[A-Za-z0-9_]\+' nextgroup=tdgQuotedString
 syn match tdgNumber '[0-9]\+'
 syn match tickNumber 'T[0-9]\+' nextgroup=tdgQuotedString skipwhite
 syn match tdgArrow '->'

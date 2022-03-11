@@ -4,7 +4,17 @@ Generate UML timing diagrams from text-based descriptions
 ## Setup
 ```
 npm i -g timing-diagram-generator
+```
+
+## Usage
+```bash
+# generate the SVG from the description
 tdg my_diagram.tdg > output.svg
+
+# or get a png directly (on linux with ImageMagick)
+tdg my_diagram.tdg | convert - output.png
+# or
+tdg my_diagram.tdg | convert - png:/dev/stdout > output.png
 ```
 
 ### Installing the Vim syntax

@@ -35,6 +35,7 @@ syn keyword tdgTodo contained TODO FIXME XXX NOTE
 syn match tdgComment "#.*$" contains=tdgTodo
 
 let b:current_syntax = "tdg"
+setlocal commentstring=#\ %s
 
 hi def link tdgTodo         Todo
 hi def link tdgComment      Comment
